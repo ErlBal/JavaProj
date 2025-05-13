@@ -1,0 +1,47 @@
+# Compiled class files
+/target/
+
+# Logs
+*.log
+
+# Maven
+.mvn/
+!/.mvn/wrapper/maven-wrapper.jar
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
+
+# VS Code
+.vscode/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+
+# Database
+*.h2.db
+*.mv.db
+
+# Redis dump
+*.rdb
+
+# Node modules (if you add frontend with npm)
+node_modules/
+
+# Other
+*.swp
+*.swo
+
+# Ignore application secrets (if any)
+application-local.properties 
