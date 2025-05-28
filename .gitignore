@@ -44,4 +44,68 @@ node_modules/
 *.swo
 
 # Ignore application secrets (if any)
-application-local.properties 
+application-local.properties
+
+### Java ###
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+replay_pid*
+
+### Maven ###
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+### IntelliJ IDEA ###
+*.ipr
+
+### VS Code ###
+*.code-workspace
+.history/
+
+### Eclipse ###
+.apt_generated
+.factorypath
+.springBeans
+.sts4-cache
+bin/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### Spring Boot ###
+spring-boot-starter/
+spring-boot-starter-test/
+spring-boot-starter-web/
+spring-boot-starter-data-jpa/
+spring-boot-starter-security/
+spring-boot-starter-websocket/
+spring-boot-starter-validation/
+spring-boot-starter-data-redis/
+
+### Application Properties ###
+application-dev.properties
+application-prod.properties
+application-test.properties
+
+### Logs ###
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log* 

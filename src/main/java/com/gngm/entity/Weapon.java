@@ -22,4 +22,14 @@ public class Weapon {
     private int damage;
 
     private double fireRate;
+
+    public Weapon() {}
+
+    public Weapon(Long id, String name, int weaponOrder, int damage, double fireRate) {
+        this.id = id;
+        this.name = name;
+        this.weaponOrder = weaponOrder;
+        this.damage = damage;
+        this.fireRate = fireRate;
+    }
 } 

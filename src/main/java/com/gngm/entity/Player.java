@@ -6,6 +6,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 
 @Entity
 @Table(name = "players")
@@ -26,6 +28,11 @@ public class Player {
 
     private int wins;
 
+    private boolean banned;
+
+    @Enumerated(EnumType.STRING)
+    private Role role = Role.PLAYER;
+
     // Default constructor for JPA
     public Player() {
     }
@@ -37,5 +44,7 @@ public class Player {
         this.kills = 0;
         this.deaths = 0;
         this.wins = 0;
+        this.banned = false;
+        this.role = Role.PLAYER;
     }
 } 

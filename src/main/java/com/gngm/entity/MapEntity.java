@@ -20,4 +20,12 @@ public class MapEntity {
 
     @Lob
     private String layoutData; // JSON or other format for map layout
+
+    public MapEntity() {}
+
+    public MapEntity(Long id, String name, String layoutData) {
+        this.id = id;
+        this.name = name;
+        this.layoutData = layoutData;
+    }
 } 

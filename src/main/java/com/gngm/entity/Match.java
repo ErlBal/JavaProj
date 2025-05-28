@@ -15,10 +15,6 @@ public class Match {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "map_id")
-    private MapEntity map;
-
     @ManyToMany
     @JoinTable(
         name = "match_players",
@@ -27,18 +23,29 @@ public class Match {
     )
     private Set<Player> players = new HashSet<>();
 
-    @Enumerated(EnumType.STRING)
-    private MatchState state;
-
     @ManyToOne
     @JoinColumn(name = "winner_id")
     private Player winner;
 
-    private LocalDateTime createdAt;
+    private LocalDateTime startTime;
+    
+    private LocalDateTime endTime;
 
-    public enum MatchState {
-        WAITING,
-        IN_PROGRESS,
-        FINISHED
+    private String mapName;
+
+    private int maxPlayers;
+
+    private boolean isActive;
+
+    // Default constructor for JPA
+    public Match() {
+    }
+
+    // Constructor for convenience
+    public Match(String mapName, int maxPlayers) {
+        this.mapName = mapName;
+        this.maxPlayers = maxPlayers;
+        this.startTime = LocalDateTime.now();
+        this.isActive = true;
     }
 } 

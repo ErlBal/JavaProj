@@ -3,10 +3,14 @@ package com.gngm.service;
 import com.gngm.dto.PlayerLoginRequest;
 import com.gngm.dto.PlayerRegistrationRequest;
 import com.gngm.entity.Player;
+import com.gngm.entity.Role;
 import com.gngm.repository.PlayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 public class PlayerService {
@@ -25,13 +29,8 @@ public class PlayerService {
             throw new RuntimeException("Username already exists");
         }
 
-        Player player = new Player();
-        player.setUsername(request.getUsername());
+        Player player = new Player(request.getUsername(), request.getPassword());
         player.setPassword(passwordEncoder.encode(request.getPassword()));
-        player.setKills(0);
-        player.setDeaths(0);
-        player.setWins(0);
-
         return playerRepository.save(player);
     }
 
@@ -43,6 +42,67 @@ public class PlayerService {
             throw new RuntimeException("Invalid password");
         }
 
+        if (player.isBanned()) {
+            throw new RuntimeException("Player is banned");
+        }
+
         return player;
+    }
+
+    // Admin methods
+    @Transactional
+    public Player banPlayer(Long playerId, Long adminId) {
+        Player admin = playerRepository.findById(adminId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        if (admin.getRole() != Role.ADMIN) {
+            throw new RuntimeException("Only admins can ban players");
+        }
+
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new RuntimeException("Player not found"));
+
+        player.setBanned(true);
+        return playerRepository.save(player);
+    }
+
+    @Transactional
+    public Player unbanPlayer(Long playerId, Long adminId) {
+        Player admin = playerRepository.findById(adminId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        if (admin.getRole() != Role.ADMIN) {
+            throw new RuntimeException("Only admins can unban players");
+        }
+
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new RuntimeException("Player not found"));
+
+        player.setBanned(false);
+        return playerRepository.save(player);
+    }
+
+    @Transactional
+    public void deletePlayer(Long playerId, Long adminId) {
+        Player admin = playerRepository.findById(adminId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        if (admin.getRole() != Role.ADMIN) {
+            throw new RuntimeException("Only admins can delete players");
+        }
+
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new RuntimeException("Player not found"));
+
+        playerRepository.delete(player);
+    }
+
+    public List<Player> getAllPlayers() {
+        return playerRepository.findAll();
+    }
+
+    public Player getPlayerById(Long playerId) {
+        return playerRepository.findById(playerId)
+                .orElseThrow(() -> new RuntimeException("Player not found"));
     }
 } 
