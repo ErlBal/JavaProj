@@ -2,6 +2,8 @@ package com.gngm.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -10,6 +12,8 @@ import java.util.Set;
 @Entity
 @Table(name = "matches")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Match {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,25 +31,25 @@ public class Match {
     @JoinColumn(name = "winner_id")
     private Player winner;
 
+    @Column(nullable = false)
     private LocalDateTime startTime;
-    
+
+    @Column
     private LocalDateTime endTime;
 
+    @Column(nullable = false)
     private String mapName;
 
-    private int maxPlayers;
+    @Column(nullable = false)
+    private Integer maxPlayers = 4;
 
-    private boolean isActive;
+    @Column(nullable = false)
+    private Boolean isActive = true;
 
-    // Default constructor for JPA
-    public Match() {
-    }
-
-    // Constructor for convenience
-    public Match(String mapName, int maxPlayers) {
+    public Match(String mapName, Integer maxPlayers, LocalDateTime startTime) {
         this.mapName = mapName;
         this.maxPlayers = maxPlayers;
-        this.startTime = LocalDateTime.now();
+        this.startTime = startTime;
         this.isActive = true;
     }
 } 

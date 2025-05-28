@@ -8,36 +8,43 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.Column;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Entity
 @Table(name = "players")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Player {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
     private String username;
 
+    @Column(nullable = false)
     private String password;
 
-    private int kills;
+    @Column(nullable = false)
+    private Integer kills = 0;
 
-    private int deaths;
+    @Column(nullable = false)
+    private Integer deaths = 0;
 
-    private int wins;
+    @Column(nullable = false)
+    private Integer wins = 0;
 
-    private boolean banned;
+    @Column(nullable = false)
+    private Boolean banned = false;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Role role = Role.PLAYER;
 
-    // Default constructor for JPA
-    public Player() {
-    }
-
-    // Constructor for convenience
     public Player(String username, String password) {
         this.username = username;
         this.password = password;

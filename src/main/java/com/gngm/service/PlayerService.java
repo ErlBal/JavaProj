@@ -6,7 +6,7 @@ import com.gngm.entity.Player;
 import com.gngm.entity.Role;
 import com.gngm.repository.PlayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,10 +16,10 @@ import java.util.List;
 public class PlayerService {
 
     private final PlayerRepository playerRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public PlayerService(PlayerRepository playerRepository, BCryptPasswordEncoder passwordEncoder) {
+    public PlayerService(PlayerRepository playerRepository, PasswordEncoder passwordEncoder) {
         this.playerRepository = playerRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -42,11 +42,15 @@ public class PlayerService {
             throw new RuntimeException("Invalid password");
         }
 
-        if (player.isBanned()) {
+        if (player.getBanned()) {
             throw new RuntimeException("Player is banned");
         }
 
         return player;
+    }
+
+    public Player authenticatePlayer(com.gngm.dto.AuthenticationRequest request) {
+        return authenticatePlayer(new com.gngm.dto.PlayerLoginRequest(request.getUsername(), request.getPassword()));
     }
 
     // Admin methods

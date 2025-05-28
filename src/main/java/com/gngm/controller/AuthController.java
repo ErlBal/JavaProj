@@ -6,58 +6,46 @@ import com.gngm.dto.PlayerRegistrationRequest;
 import com.gngm.entity.Player;
 import com.gngm.security.JwtService;
 import com.gngm.service.PlayerService;
+import com.gngm.service.GameEngineService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-
     private final PlayerService playerService;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
+    private final GameEngineService gameEngineService;
 
     @Autowired
-    public AuthController(
-            PlayerService playerService,
-            JwtService jwtService,
-            AuthenticationManager authenticationManager,
-            UserDetailsService userDetailsService) {
+    public AuthController(PlayerService playerService, JwtService jwtService, AuthenticationManager authenticationManager, UserDetailsService userDetailsService, GameEngineService gameEngineService) {
         this.playerService = playerService;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
+        this.gameEngineService = gameEngineService;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AuthenticationResponse> register(
-            @RequestBody PlayerRegistrationRequest request) {
+    public AuthenticationResponse register(@RequestBody PlayerRegistrationRequest request) {
         Player player = playerService.registerPlayer(request);
+        gameEngineService.initializePlayer(player);
         UserDetails userDetails = userDetailsService.loadUserByUsername(player.getUsername());
-        String token = jwtService.generateToken(userDetails);
-        return ResponseEntity.ok(new AuthenticationResponse(token));
+        String jwt = jwtService.generateToken(userDetails);
+        return AuthenticationResponse.builder().token(jwt).id(player.getId()).build();
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthenticationResponse> authenticate(
-            @RequestBody AuthenticationRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()
-                )
-        );
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUsername());
-        String token = jwtService.generateToken(userDetails);
-        return ResponseEntity.ok(new AuthenticationResponse(token));
+    public AuthenticationResponse login(@RequestBody AuthenticationRequest request) {
+        Player player = playerService.authenticatePlayer(request);
+        gameEngineService.initializePlayer(player);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(player.getUsername());
+        String jwt = jwtService.generateToken(userDetails);
+        return AuthenticationResponse.builder().token(jwt).id(player.getId()).build();
     }
 } 

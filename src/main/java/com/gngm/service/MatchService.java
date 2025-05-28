@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,7 +26,7 @@ public class MatchService {
 
     @Transactional
     public Match createMatch(String mapName, int maxPlayers) {
-        Match match = new Match(mapName, maxPlayers);
+        Match match = new Match(mapName, maxPlayers, LocalDateTime.now());
         return matchRepository.save(match);
     }
 
@@ -41,7 +42,7 @@ public class MatchService {
             throw new RuntimeException("Match is full");
         }
 
-        if (!match.isActive()) {
+        if (!match.getIsActive()) {
             throw new RuntimeException("Match is not active");
         }
 
@@ -58,8 +59,8 @@ public class MatchService {
                 .orElseThrow(() -> new RuntimeException("Winner not found"));
 
         match.setWinner(winner);
-        match.setEndTime(java.time.LocalDateTime.now());
-        match.setActive(false);
+        match.setEndTime(LocalDateTime.now());
+        match.setIsActive(false);
 
         // Update player stats
         winner.setWins(winner.getWins() + 1);
