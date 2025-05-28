@@ -48,7 +48,8 @@ public class GameWebSocketController {
             gameEngineService.getPlayerStates(),
             gameEngineService.getActiveProjectiles()
         );
-        
+        // Log player states for debugging
+        System.out.println("[GameWebSocketController] Broadcasting player states: " + state.getPlayerStates());
         // Broadcast to all connected clients
         messagingTemplate.convertAndSend("/topic/game/state", state);
     }

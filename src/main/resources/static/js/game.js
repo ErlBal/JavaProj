@@ -112,6 +112,8 @@ class Game {
     }
 
     updateGameState(state) {
+        // Debug: log received state
+        console.log('[Game] Received game state:', state);
         // Update player states
         this.gameState.playerStates = new Map(Object.entries(state.playerStates));
         this.gameState.projectiles = new Map(Object.entries(state.projectiles));

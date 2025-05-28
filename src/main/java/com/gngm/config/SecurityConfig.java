@@ -4,6 +4,7 @@ import com.gngm.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -30,9 +31,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/ws/**")
+                .disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/ws/**", "/ws", "/", "/index.html", "/js/**", "/css/**").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/ws/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/ws/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/ws/**").permitAll()
+                .requestMatchers("/ws/**", "/ws", "/", "/index.html", "/js/**", "/css/**", "/favicon.ico").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
