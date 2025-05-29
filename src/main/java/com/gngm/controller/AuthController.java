@@ -8,6 +8,7 @@ import com.gngm.security.JwtService;
 import com.gngm.service.PlayerService;
 import com.gngm.service.GameEngineService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -21,20 +22,27 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
     private final GameEngineService gameEngineService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public AuthController(PlayerService playerService, JwtService jwtService, AuthenticationManager authenticationManager, UserDetailsService userDetailsService, GameEngineService gameEngineService) {
+    public AuthController(PlayerService playerService, JwtService jwtService, AuthenticationManager authenticationManager, UserDetailsService userDetailsService, GameEngineService gameEngineService, SimpMessagingTemplate messagingTemplate) {
         this.playerService = playerService;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
         this.gameEngineService = gameEngineService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @PostMapping("/register")
     public AuthenticationResponse register(@RequestBody PlayerRegistrationRequest request) {
         Player player = playerService.registerPlayer(request);
         gameEngineService.initializePlayer(player);
+        // Broadcast game state after registration
+        messagingTemplate.convertAndSend("/topic/game/state", new GameWebSocketController.GameStateMessage(
+            gameEngineService.getPlayerStates(),
+            gameEngineService.getActiveProjectiles()
+        ));
         UserDetails userDetails = userDetailsService.loadUserByUsername(player.getUsername());
         String jwt = jwtService.generateToken(userDetails);
         return AuthenticationResponse.builder().token(jwt).id(player.getId()).build();
@@ -44,6 +52,11 @@ public class AuthController {
     public AuthenticationResponse login(@RequestBody AuthenticationRequest request) {
         Player player = playerService.authenticatePlayer(request);
         gameEngineService.initializePlayer(player);
+        // Broadcast game state after login
+        messagingTemplate.convertAndSend("/topic/game/state", new GameWebSocketController.GameStateMessage(
+            gameEngineService.getPlayerStates(),
+            gameEngineService.getActiveProjectiles()
+        ));
         UserDetails userDetails = userDetailsService.loadUserByUsername(player.getUsername());
         String jwt = jwtService.generateToken(userDetails);
         return AuthenticationResponse.builder().token(jwt).id(player.getId()).build();

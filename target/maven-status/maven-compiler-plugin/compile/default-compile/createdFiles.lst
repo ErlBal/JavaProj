@@ -23,4 +23,5 @@ com\gngm\config\DataSeeder.class
 com\gngm\entity\Role.class
 com\gngm\repository\MatchRepository.class
 com\gngm\security\PlayerUserDetails.class
+com\gngm\config\GameBroadcastScheduler.class
 com\gngm\dto\PlayerRegistrationRequest.class

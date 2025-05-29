@@ -2,6 +2,8 @@ package com.gngm.service;
 
 import com.gngm.entity.Player;
 import com.gngm.entity.Weapon;
+import com.gngm.repository.WeaponRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,6 +14,9 @@ public class GameEngineService {
     private final Map<Long, Projectile> activeProjectiles = new ConcurrentHashMap<>();
     private static final double MOVEMENT_SPEED = 5.0;
     private static final double ROTATION_SPEED = 3.0;
+
+    @Autowired
+    private WeaponRepository weaponRepository;
 
     public static class PlayerState {
         private double x;
@@ -81,7 +86,13 @@ public class GameEngineService {
     }
 
     public void initializePlayer(Player player) {
-        playerStates.put(player.getId(), new PlayerState(0, 0));
+        // Log when player is initialized
+        System.out.println("[GameEngineService] Initializing player: " + player.getId());
+        PlayerState state = new PlayerState(0, 0);
+        // Set default weapon to pistol
+        Weapon pistol = weaponRepository.findByName("Pistol").orElse(null);
+        state.setCurrentWeapon(pistol);
+        playerStates.put(player.getId(), state);
     }
 
     public void updatePlayerMovement(long playerId, double deltaX, double deltaY, double rotation) {

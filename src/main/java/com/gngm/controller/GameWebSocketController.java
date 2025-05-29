@@ -23,6 +23,8 @@ public class GameWebSocketController {
     @MessageMapping("/game/move")
     @SendTo("/topic/game/state")
     public void handleMovement(MovementMessage message) {
+        // Log when movement is received
+        System.out.println("[GameWebSocketController] Received movement: " + message);
         gameEngineService.updatePlayerMovement(
             message.getPlayerId(),
             message.getDeltaX(),
@@ -35,6 +37,8 @@ public class GameWebSocketController {
     @MessageMapping("/game/shoot")
     @SendTo("/topic/game/state")
     public void handleShooting(ShootingMessage message) {
+        // Log when shooting is received
+        System.out.println("[GameWebSocketController] Received shooting: " + message);
         gameEngineService.handleShooting(message.getPlayerId(), message.getDirection());
         broadcastGameState();
     }
@@ -48,8 +52,6 @@ public class GameWebSocketController {
             gameEngineService.getPlayerStates(),
             gameEngineService.getActiveProjectiles()
         );
-        // Log player states for debugging
-        System.out.println("[GameWebSocketController] Broadcasting player states: " + state.getPlayerStates());
         // Broadcast to all connected clients
         messagingTemplate.convertAndSend("/topic/game/state", state);
     }
