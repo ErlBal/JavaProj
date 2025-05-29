@@ -18,8 +18,9 @@ public class GameBroadcastScheduler {
         this.messagingTemplate = messagingTemplate;
     }
 
-    @Scheduled(fixedRate = 100)
+    @Scheduled(fixedRate = 16)
     public void broadcastGameState() {
+        gameEngineService.updateProjectiles();
         messagingTemplate.convertAndSend("/topic/game/state", new GameWebSocketController.GameStateMessage(
             gameEngineService.getPlayerStates(),
             gameEngineService.getActiveProjectiles()
