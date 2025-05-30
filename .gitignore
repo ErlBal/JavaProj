@@ -46,6 +46,13 @@ node_modules/
 # Ignore application secrets (if any)
 application-local.properties
 
+# Frontend (Vite/React)
+GnGm/dist/
+GnGm/node_modules/
+GnGm/.env
+GnGm/.env.local
+GnGm/.env.*.local
+
 ### Java ###
 *.class
 *.jar
