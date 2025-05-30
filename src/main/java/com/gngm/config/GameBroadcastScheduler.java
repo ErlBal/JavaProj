@@ -21,6 +21,7 @@ public class GameBroadcastScheduler {
     @Scheduled(fixedRate = 16)
     public void broadcastGameState() {
         gameEngineService.updateProjectiles();
+        gameEngineService.cleanupDeadPlayers();
         messagingTemplate.convertAndSend("/topic/game/state", new GameWebSocketController.GameStateMessage(
             gameEngineService.getPlayerStates(),
             gameEngineService.getActiveProjectiles()

@@ -174,6 +174,13 @@ class Game {
     handleMovement() {
         if (!this.playerId) return;
 
+        // Check if player state exists before processing movement
+        const playerState = this.gameState.playerStates.get(this.playerId.toString());
+        if (!playerState) {
+            // console.log('Player state not found in game state.'); // Optional debug log
+            return;
+        }
+
         let deltaX = 0;
         let deltaY = 0;
 
@@ -184,24 +191,20 @@ class Game {
 
         if (deltaX !== 0 || deltaY !== 0) {
             // Calculate rotation based on mouse position
-            const playerState = this.gameState.playerStates.get(this.playerId.toString());
-            if (playerState) {
-                // Convert mouse position from canvas pixels to game world coordinates
-                const mouseGameX = (this.mousePosition.x / this.canvas.width) * 1000;
-                const mouseGameY = (this.mousePosition.y / this.canvas.height) * 1000;
+            const mouseGameX = (this.mousePosition.x / this.canvas.width) * 1000;
+            const mouseGameY = (this.mousePosition.y / this.canvas.height) * 1000;
 
-                // Calculate rotation from player's game world position to mouse game world position
-                const dx = mouseGameX - playerState.x;
-                const dy = mouseGameY - playerState.y;
-                const rotation = Math.atan2(dy, dx);
+            // Calculate rotation from player's game world position to mouse game world position
+            const dx = mouseGameX - playerState.x;
+            const dy = mouseGameY - playerState.y;
+            const rotation = Math.atan2(dy, dx);
 
-                this.stompClient.send("/app/game/move", {}, JSON.stringify({
-                    playerId: this.playerId,
-                    deltaX: deltaX,
-                    deltaY: deltaY,
-                    rotation: rotation
-                }));
-            }
+            this.stompClient.send("/app/game/move", {}, JSON.stringify({
+                playerId: this.playerId,
+                deltaX: deltaX,
+                deltaY: deltaY,
+                rotation: rotation
+            }));
         }
     }
 

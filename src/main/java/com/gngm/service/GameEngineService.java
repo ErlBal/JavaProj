@@ -28,6 +28,7 @@ public class GameEngineService {
         private boolean isShooting;
         private boolean isAlive;
         private String username;
+        private long deathTime;
 
         public PlayerState(double x, double y) {
             this.x = x;
@@ -38,6 +39,7 @@ public class GameEngineService {
             this.isShooting = false;
             this.isAlive = true;
             this.username = null;
+            this.deathTime = 0;
         }
 
         // Getters and setters
@@ -59,6 +61,8 @@ public class GameEngineService {
         public void setAlive(boolean alive) { isAlive = alive; }
         public String getUsername() { return username; }
         public void setUsername(String username) { this.username = username; }
+        public long getDeathTime() { return deathTime; }
+        public void setDeathTime(long deathTime) { this.deathTime = deathTime; }
     }
 
     public static class Projectile {
@@ -178,6 +182,7 @@ public class GameEngineService {
                     if (state.getHealth() <= 0) {
                         state.setAlive(false);
                         state.setHealth(0);
+                        state.setDeathTime(System.currentTimeMillis()); // Record death time
                     }
                     // Remove projectile after hit
                     activeProjectiles.values().remove(projectile);
@@ -196,5 +201,15 @@ public class GameEngineService {
 
     public Map<Long, PlayerState> getPlayerStates() {
         return playerStates;
+    }
+
+    // Add method to remove dead players after a delay
+    public void cleanupDeadPlayers() {
+        long currentTime = System.currentTimeMillis();
+        playerStates.entrySet().removeIf(entry -> {
+            PlayerState state = entry.getValue();
+            // Remove if not alive and 3 seconds have passed since death
+            return !state.isAlive() && (currentTime - state.getDeathTime() > 3000);
+        });
     }
 } 
