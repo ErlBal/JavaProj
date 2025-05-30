@@ -22,6 +22,7 @@
             position: relative;
             width: 100vw;
             height: 100vh;
+            display: none; /* Hide game container initially */
         }
         canvas {
             border: 1px solid black;
@@ -60,6 +61,7 @@
         #botControls button:hover {
             background: #45a049;
         }
+        /* Auth Modal Styles */
         #authModal {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -99,6 +101,82 @@
             color: #ff5555;
             min-height: 18px;
         }
+        /* Main Menu Styles */
+        #mainMenu {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #222;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            z-index: 999;
+        }
+        #mainMenu h2 {
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        #mainMenu button {
+            padding: 12px 24px;
+            font-size: 18px;
+            border-radius: 6px;
+            border: none;
+            background: #4caf50;
+            color: white;
+            cursor: pointer;
+            width: 200px;
+            text-align: center;
+        }
+        #mainMenu button:hover {
+            background: #45a049;
+        }
+        /* Lobby View Styles */
+        #lobbyView {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #222;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            gap: 20px;
+            z-index: 999;
+        }
+        #lobbyView h2 {
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        #matchList {
+            width: 80%;
+            max-width: 600px;
+            background: #333;
+            border-radius: 8px;
+            padding: 10px;
+            color: #fff;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        .matchItem {
+            background: #444;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .matchItem button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            background: #4caf50;
+            color: white;
+            cursor: pointer;
+        }
+        .matchItem button:hover {
+            background: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -110,7 +188,6 @@
             <button id="removeBotsBtn">Remove All Bots</button>
         </div>
     </div>
-
     <!-- Auth Modal -->
     <div id="authModal">
         <form id="authModalContent" onsubmit="return false;">
@@ -124,12 +201,23 @@
             <div id="authError"></div>
         </form>
     </div>
-
+    <!-- Main Menu -->
+    <div id="mainMenu">
+        <h2>Main Menu</h2>
+        <button id="lobbyBtn">Lobby</button>
+        <button id="settingsBtn">Settings</button>
+        <button id="exitBtn">Exit</button>
+    </div>
+    <!-- Lobby View -->
+    <div id="lobbyView">
+        <h2>Lobbies</h2>
+        <div id="matchList"></div>
+        <button id="createMatchBtn">Create New Match</button>
+        <button id="backToMenuBtn">Back to Menu</button>
+    </div>
     <!-- WebSocket and SockJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-    
-    <!-- Game Scripts -->
     <script src="/js/game.js"></script>
 </body>
 </html> 
