@@ -73,14 +73,55 @@ class Game {
         };
         this.keys = new Set();
         this.mousePosition = { x: 0, y: 0 };
+        
+        // Resize canvas initially and on window resize
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+
         this.setupWebSocket();
         this.setupInputHandlers();
+        this.setupBotControls();
         this.gameLoop();
+    }
+
+    resizeCanvas() {
+        const container = document.getElementById('gameContainer');
+        this.canvas.width = container.clientWidth;
+        this.canvas.height = container.clientHeight;
+    }
+
+    setupBotControls() {
+        // Add bot button handler
+        document.querySelector('#addBotBtn').onclick = () => {
+            if (this.stompClient && this.stompClient.connected) {
+                console.log("Sending add bot request...");
+                this.stompClient.send("/app/game/addBot", {}, {});
+            } else {
+                console.error("WebSocket not connected");
+            }
+        };
+
+        document.querySelector('#removeBotsBtn').onclick = () => {
+            if (this.stompClient && this.stompClient.connected) {
+                // Get all bot IDs from the game state and remove them
+                this.gameState.playerStates.forEach((state, id) => {
+                    if (state.username && state.username.startsWith('Bot')) {
+                        console.log("Removing bot:", id);
+                        this.stompClient.send("/app/game/removeBot", {}, JSON.stringify({ botId: parseInt(id) }));
+                    }
+                });
+            } else {
+                console.error("WebSocket not connected");
+            }
+        };
     }
 
     setupWebSocket() {
         const socket = new SockJS('/ws');
         this.stompClient = Stomp.over(socket);
+        
+        // Disable debug logging
+        this.stompClient.debug = null;
         
         this.stompClient.connect({}, frame => {
             console.log('Connected to WebSocket');
@@ -112,8 +153,6 @@ class Game {
     }
 
     updateGameState(state) {
-        // Debug: log received state
-        console.log('[Game] Received game state:', state);
         // Update player states
         this.gameState.playerStates = new Map(Object.entries(state.playerStates));
         this.gameState.projectiles = new Map(Object.entries(state.projectiles));
@@ -123,6 +162,13 @@ class Game {
             const health = this.gameState.playerStates.get(this.playerId.toString()).health;
             document.getElementById('healthBar').textContent = `Health: ${Math.round(health)}`;
         }
+
+        // Debug log for bot states
+        this.gameState.playerStates.forEach((state, id) => {
+            if (state.username && state.username.startsWith('Bot')) {
+                console.log(`Bot ${id} state:`, state);
+            }
+        });
     }
 
     handleMovement() {
@@ -173,31 +219,51 @@ class Game {
     render() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // Calculate player size based on canvas size
+        const minDim = Math.min(this.canvas.width, this.canvas.height);
+        const playerSize = Math.max(12, Math.min(32, minDim * 0.008)); // 0.8% of min dim, min 12px, max 32px
+
         // Draw players
         this.gameState.playerStates.forEach((state, id) => {
+            // Scale position to canvas size
+            const x = (state.x / 1000) * this.canvas.width;
+            const y = (state.y / 1000) * this.canvas.height;
+            
             this.ctx.save();
-            this.ctx.translate(state.x, state.y);
+            this.ctx.translate(x, y);
             this.ctx.rotate(state.rotation);
             
             // Draw player body
-            this.ctx.fillStyle = id === this.playerId.toString() ? '#00ff00' : '#ff0000';
-            this.ctx.fillRect(-15, -15, 30, 30);
+            if (id === this.playerId.toString()) {
+                this.ctx.fillStyle = state.isAlive ? '#00ff00' : '#ff0000'; // Player is green
+            } else if (state.username && state.username.startsWith('Bot')) {
+                this.ctx.fillStyle = state.isAlive ? '#ff9900' : '#ff0000'; // Bots are orange
+            } else {
+                this.ctx.fillStyle = state.isAlive ? '#4CAF50' : '#ff0000'; // Other players are blue-green
+            }
+            this.ctx.fillRect(-playerSize/2, -playerSize/2, playerSize, playerSize);
             
             // Draw weapon direction
-            this.ctx.strokeStyle = '#ffffff';
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, 0);
-            this.ctx.lineTo(30, 0);
-            this.ctx.stroke();
+            this.ctx.fillStyle = '#000';
+            this.ctx.fillRect(0, -playerSize/6, playerSize * 0.7, playerSize/3);
             
             this.ctx.restore();
+            
+            // Draw player name
+            this.ctx.fillStyle = '#fff';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(state.username || 'Player ' + id, x, y - playerSize);
         });
 
         // Draw projectiles
         this.gameState.projectiles.forEach(projectile => {
+            // Scale position to canvas size
+            const x = (projectile.x / 1000) * this.canvas.width;
+            const y = (projectile.y / 1000) * this.canvas.height;
+            
             this.ctx.fillStyle = '#ffff00';
             this.ctx.beginPath();
-            this.ctx.arc(projectile.x, projectile.y, 3, 0, Math.PI * 2);
+            this.ctx.arc(x, y, Math.max(3, playerSize * 0.15), 0, Math.PI * 2);
             this.ctx.fill();
         });
     }

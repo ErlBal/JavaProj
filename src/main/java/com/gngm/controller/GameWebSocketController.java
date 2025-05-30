@@ -1,6 +1,7 @@
 package com.gngm.controller;
 
 import com.gngm.service.GameEngineService;
+import com.gngm.service.BotManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -12,19 +13,19 @@ import java.util.Map;
 public class GameWebSocketController {
 
     private final GameEngineService gameEngineService;
+    private final BotManager botManager;
     private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public GameWebSocketController(GameEngineService gameEngineService, SimpMessagingTemplate messagingTemplate) {
+    public GameWebSocketController(GameEngineService gameEngineService, BotManager botManager, SimpMessagingTemplate messagingTemplate) {
         this.gameEngineService = gameEngineService;
+        this.botManager = botManager;
         this.messagingTemplate = messagingTemplate;
     }
 
     @MessageMapping("/game/move")
     @SendTo("/topic/game/state")
     public void handleMovement(MovementMessage message) {
-        // Log when movement is received
-        System.out.println("[GameWebSocketController] Received movement: " + message);
         gameEngineService.updatePlayerMovement(
             message.getPlayerId(),
             message.getDeltaX(),
@@ -37,10 +38,30 @@ public class GameWebSocketController {
     @MessageMapping("/game/shoot")
     @SendTo("/topic/game/state")
     public void handleShooting(ShootingMessage message) {
-        // Log when shooting is received
-        System.out.println("[GameWebSocketController] Received shooting: " + message);
         gameEngineService.handleShooting(message.getPlayerId(), message.getDirection());
         broadcastGameState();
+    }
+
+    @MessageMapping("/game/addBot")
+    @SendTo("/topic/game/state")
+    public GameStateMessage addBot() {
+        System.out.println("Adding new bot...");
+        botManager.addBot();
+        return new GameStateMessage(
+            gameEngineService.getPlayerStates(),
+            gameEngineService.getActiveProjectiles()
+        );
+    }
+
+    @MessageMapping("/game/removeBot")
+    @SendTo("/topic/game/state")
+    public GameStateMessage removeBot(BotMessage message) {
+        System.out.println("Removing bot with ID: " + message.getBotId());
+        botManager.removeBot(message.getBotId());
+        return new GameStateMessage(
+            gameEngineService.getPlayerStates(),
+            gameEngineService.getActiveProjectiles()
+        );
     }
 
     private void broadcastGameState() {
@@ -83,6 +104,14 @@ public class GameWebSocketController {
         public void setPlayerId(long playerId) { this.playerId = playerId; }
         public double getDirection() { return direction; }
         public void setDirection(double direction) { this.direction = direction; }
+    }
+
+    public static class BotMessage {
+        private long botId;
+
+        // Getters and setters
+        public long getBotId() { return botId; }
+        public void setBotId(long botId) { this.botId = botId; }
     }
 
     public static class GameStateMessage {

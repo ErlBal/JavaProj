@@ -1,6 +1,6 @@
 Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\security\JwtService.java
+Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\service\BotManager.java
 Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\config\GameBroadcastScheduler.java
-Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\AutoClicker.java
 Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\controller\MatchController.java
 Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\entity\MapEntity.java
 Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\entity\Match.java
@@ -32,3 +32,4 @@ Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\config\SecurityC
 Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\service\MatchService.java
 Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\controller\GameWebSocketController.java
 Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\controller\AuthController.java
+Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\entity\BotPlayer.java

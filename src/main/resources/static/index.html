@@ -3,20 +3,30 @@
 <head>
     <title>GnGm Game</title>
     <style>
-        canvas {
-            border: 1px solid black;
-            background: #333;
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
         }
         body {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
             background: #222;
+            width: 100vw;
+            height: 100vh;
         }
         #gameContainer {
             position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        canvas {
+            border: 1px solid black;
+            background: #333;
+            display: block;
         }
         #healthBar {
             position: absolute;
@@ -26,6 +36,29 @@
             padding: 5px;
             border-radius: 3px;
             color: white;
+            z-index: 1000;
+        }
+        #botControls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #444;
+            padding: 5px;
+            border-radius: 3px;
+            color: white;
+            z-index: 1000;
+        }
+        #botControls button {
+            padding: 5px 10px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 3px;
+            background: #4caf50;
+            color: white;
+            cursor: pointer;
+        }
+        #botControls button:hover {
+            background: #45a049;
         }
         #authModal {
             position: fixed;
@@ -70,8 +103,12 @@
 </head>
 <body>
     <div id="gameContainer">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <canvas id="gameCanvas"></canvas>
         <div id="healthBar">Health: 100</div>
+        <div id="botControls">
+            <button id="addBotBtn">Add Bot</button>
+            <button id="removeBotsBtn">Remove All Bots</button>
+        </div>
     </div>
 
     <!-- Auth Modal -->

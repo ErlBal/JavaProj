@@ -45,6 +45,16 @@ public class Player {
     @Column(nullable = false)
     private Role role = Role.PLAYER;
 
+    // Game state fields (not persisted to database)
+    @Column(insertable = false, updatable = false)
+    private transient double x = 0;
+
+    @Column(insertable = false, updatable = false)
+    private transient double y = 0;
+
+    @Column(insertable = false, updatable = false)
+    private transient double rotation = 0;
+
     public Player(String username, String password) {
         this.username = username;
         this.password = password;
@@ -54,4 +64,12 @@ public class Player {
         this.banned = false;
         this.role = Role.PLAYER;
     }
+
+    // Game state methods
+    public double getX() { return x; }
+    public void setX(double x) { this.x = x; }
+    public double getY() { return y; }
+    public void setY(double y) { this.y = y; }
+    public double getRotation() { return rotation; }
+    public void setRotation(double rotation) { this.rotation = rotation; }
 } 

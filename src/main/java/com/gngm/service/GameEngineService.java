@@ -26,6 +26,8 @@ public class GameEngineService {
         private Weapon currentWeapon;
         private boolean isMoving;
         private boolean isShooting;
+        private boolean isAlive;
+        private String username;
 
         public PlayerState(double x, double y) {
             this.x = x;
@@ -34,6 +36,8 @@ public class GameEngineService {
             this.health = 100;
             this.isMoving = false;
             this.isShooting = false;
+            this.isAlive = true;
+            this.username = null;
         }
 
         // Getters and setters
@@ -51,6 +55,10 @@ public class GameEngineService {
         public void setMoving(boolean moving) { isMoving = moving; }
         public boolean isShooting() { return isShooting; }
         public void setShooting(boolean shooting) { isShooting = shooting; }
+        public boolean isAlive() { return isAlive; }
+        public void setAlive(boolean alive) { isAlive = alive; }
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
     }
 
     public static class Projectile {
@@ -86,21 +94,32 @@ public class GameEngineService {
     }
 
     public void initializePlayer(Player player) {
-        // Log when player is initialized
-        System.out.println("[GameEngineService] Initializing player: " + player.getId());
         PlayerState state = new PlayerState(0, 0);
         // Set default weapon to pistol
         Weapon pistol = weaponRepository.findByName("Pistol").orElse(null);
         state.setCurrentWeapon(pistol);
+        state.setUsername(player.getUsername());
         playerStates.put(player.getId(), state);
     }
 
     public void updatePlayerMovement(long playerId, double deltaX, double deltaY, double rotation) {
         PlayerState state = playerStates.get(playerId);
         if (state != null) {
-            // Update position based on movement direction and speed
-            state.setX(state.getX() + deltaX * MOVEMENT_SPEED);
-            state.setY(state.getY() + deltaY * MOVEMENT_SPEED);
+            // Calculate new position
+            double newX = state.getX() + deltaX * MOVEMENT_SPEED;
+            double newY = state.getY() + deltaY * MOVEMENT_SPEED;
+            
+            // Get canvas dimensions from the client
+            double canvasWidth = 1000;  // Default width
+            double canvasHeight = 1000; // Default height
+            
+            // Boundary checks
+            newX = Math.max(0, Math.min(newX, canvasWidth));
+            newY = Math.max(0, Math.min(newY, canvasHeight));
+            
+            // Update position
+            state.setX(newX);
+            state.setY(newY);
             state.setRotation(rotation);
         }
     }
@@ -124,8 +143,22 @@ public class GameEngineService {
     public void updateProjectiles() {
         // Update projectile positions and check for collisions
         activeProjectiles.forEach((id, projectile) -> {
-            projectile.setX(projectile.getX() + Math.cos(projectile.getDirection()) * projectile.getSpeed());
-            projectile.setY(projectile.getY() + Math.sin(projectile.getDirection()) * projectile.getSpeed());
+            double newX = projectile.getX() + Math.cos(projectile.getDirection()) * projectile.getSpeed();
+            double newY = projectile.getY() + Math.sin(projectile.getDirection()) * projectile.getSpeed();
+            
+            // Get canvas dimensions
+            double canvasWidth = 1000;  // Default width
+            double canvasHeight = 1000; // Default height
+            
+            // Check if projectile is out of bounds
+            if (newX < 0 || newX > canvasWidth || newY < 0 || newY > canvasHeight) {
+                activeProjectiles.remove(id);
+                return;
+            }
+            
+            // Update position
+            projectile.setX(newX);
+            projectile.setY(newY);
             
             // Check for collisions with players
             checkProjectileCollisions(projectile);
@@ -134,13 +167,18 @@ public class GameEngineService {
 
     private void checkProjectileCollisions(Projectile projectile) {
         playerStates.forEach((playerId, state) -> {
-            if (playerId != projectile.getPlayerId()) { // Don't check collision with shooter
+            if (playerId != projectile.getPlayerId() && state.isAlive()) { // Don't check collision with shooter or dead players
                 double dx = state.getX() - projectile.getX();
                 double dy = state.getY() - projectile.getY();
                 double distance = Math.sqrt(dx * dx + dy * dy);
                 
                 if (distance < 20) { // Collision radius
                     state.setHealth(state.getHealth() - projectile.getDamage());
+                    // Check if player died
+                    if (state.getHealth() <= 0) {
+                        state.setAlive(false);
+                        state.setHealth(0);
+                    }
                     // Remove projectile after hit
                     activeProjectiles.values().remove(projectile);
                 }
