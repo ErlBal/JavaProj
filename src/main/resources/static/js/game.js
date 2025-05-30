@@ -245,11 +245,11 @@ class Game {
             
             // Draw player body
             if (id === this.playerId.toString()) {
-                this.ctx.fillStyle = state.isAlive ? '#00ff00' : '#ff0000'; // Player is green
+                this.ctx.fillStyle = '#00ff00'; // Player is green
             } else if (state.username && state.username.startsWith('Bot')) {
-                this.ctx.fillStyle = state.isAlive ? '#ff9900' : '#ff0000'; // Bots are orange
+                this.ctx.fillStyle = '#ff9900'; // Bots are orange
             } else {
-                this.ctx.fillStyle = state.isAlive ? '#4CAF50' : '#ff0000'; // Other players are blue-green
+                this.ctx.fillStyle = '#4CAF50'; // Other players are blue-green
             }
             this.ctx.fillRect(-playerSize/2, -playerSize/2, playerSize, playerSize);
             
