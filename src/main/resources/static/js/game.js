@@ -121,7 +121,7 @@ class Game {
         this.stompClient = Stomp.over(socket);
         
         // Disable debug logging
-        this.stompClient.debug = null;
+        // this.stompClient.debug = null;
         
         this.stompClient.connect({}, frame => {
             console.log('Connected to WebSocket');
@@ -186,8 +186,13 @@ class Game {
             // Calculate rotation based on mouse position
             const playerState = this.gameState.playerStates.get(this.playerId.toString());
             if (playerState) {
-                const dx = this.mousePosition.x - playerState.x;
-                const dy = this.mousePosition.y - playerState.y;
+                // Convert mouse position from canvas pixels to game world coordinates
+                const mouseGameX = (this.mousePosition.x / this.canvas.width) * 1000;
+                const mouseGameY = (this.mousePosition.y / this.canvas.height) * 1000;
+
+                // Calculate rotation from player's game world position to mouse game world position
+                const dx = mouseGameX - playerState.x;
+                const dy = mouseGameY - playerState.y;
                 const rotation = Math.atan2(dy, dx);
 
                 this.stompClient.send("/app/game/move", {}, JSON.stringify({
@@ -205,8 +210,13 @@ class Game {
 
         const playerState = this.gameState.playerStates.get(this.playerId.toString());
         if (playerState) {
-            const dx = this.mousePosition.x - playerState.x;
-            const dy = this.mousePosition.y - playerState.y;
+            // Convert mouse position from canvas pixels to game world coordinates
+            const mouseGameX = (this.mousePosition.x / this.canvas.width) * 1000;
+            const mouseGameY = (this.mousePosition.y / this.canvas.height) * 1000;
+
+            // Calculate direction from player's game world position to mouse game world position
+            const dx = mouseGameX - playerState.x;
+            const dy = mouseGameY - playerState.y;
             const direction = Math.atan2(dy, dx);
 
             this.stompClient.send("/app/game/shoot", {}, JSON.stringify({
@@ -221,7 +231,7 @@ class Game {
 
         // Calculate player size based on canvas size
         const minDim = Math.min(this.canvas.width, this.canvas.height);
-        const playerSize = Math.max(12, Math.min(32, minDim * 0.008)); // 0.8% of min dim, min 12px, max 32px
+        const playerSize = Math.max(30, Math.min(80, minDim * 0.02)); // Adjusted calculation again
 
         // Draw players
         this.gameState.playerStates.forEach((state, id) => {
