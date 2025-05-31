@@ -19,13 +19,12 @@ public class MatchController {
     @Autowired
     public MatchController(MatchService matchService) {
         this.matchService = matchService;
-    }
-
-    @PostMapping
+    }    @PostMapping
     public ResponseEntity<Match> createMatch(
             @RequestParam String mapName,
-            @RequestParam int maxPlayers) {
-        return ResponseEntity.ok(matchService.createMatch(mapName, maxPlayers));
+            @RequestParam int maxPlayers,
+            @RequestParam Long playerId) {
+        return ResponseEntity.ok(matchService.createMatch(mapName, maxPlayers, playerId));
     }
 
     @PostMapping("/{matchId}/join")

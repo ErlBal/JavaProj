@@ -76,10 +76,14 @@ export const api = {
     const token = localStorage.getItem('jwtToken');
     return token ? { 'Authorization': `Bearer ${token}` } : {};
   },
-
   // Match-related API calls
   async createMatch(mapName: string, maxPlayers: number): Promise<Match> {
-    const response = await fetch(`${API_URL}/matches?mapName=${encodeURIComponent(mapName)}&maxPlayers=${maxPlayers}`, {
+    const playerId = localStorage.getItem('playerId');
+    if (!playerId) {
+      throw new Error('Player ID not found. Please log in again.');
+    }
+
+    const response = await fetch(`${API_URL}/matches?mapName=${encodeURIComponent(mapName)}&maxPlayers=${maxPlayers}&playerId=${playerId}`, {
       method: 'POST',
       headers: {
         ...this.getAuthHeader(),

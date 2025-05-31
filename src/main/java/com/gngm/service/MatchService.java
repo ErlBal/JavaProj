@@ -26,12 +26,20 @@ public class MatchService {
     public MatchService(MatchRepository matchRepository, PlayerRepository playerRepository) {
         this.matchRepository = matchRepository;
         this.playerRepository = playerRepository;
-    }
-
-    @Transactional
-    public Match createMatch(String mapName, int maxPlayers) {
+    }    @Transactional
+    public Match createMatch(String mapName, int maxPlayers, Long creatorId) {
         Match match = new Match(mapName, maxPlayers, LocalDateTime.now());
-        return matchRepository.save(match);
+        match = matchRepository.save(match);
+        
+        // Automatically add the creator to the match
+        if (creatorId != null) {
+            Player creator = playerRepository.findById(creatorId)
+                    .orElseThrow(() -> new RuntimeException("Creator not found"));
+            match.getPlayers().add(creator);
+            match = matchRepository.save(match);
+        }
+        
+        return match;
     }
 
     @Transactional

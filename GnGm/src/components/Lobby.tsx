@@ -9,7 +9,6 @@ export default function Lobby() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
-  const [loadingCurrentMatch, setLoadingCurrentMatch] = useState(true);
 
   // Check if we were redirected here after creating a match
   const createdMatchId = location.state?.matchId;
@@ -21,7 +20,6 @@ export default function Lobby() {
 
   const fetchCurrentPlayerMatch = async () => {
     try {
-      setLoadingCurrentMatch(true);
       const playerId = localStorage.getItem('playerId');
       if (playerId) {
         const match = await api.getCurrentPlayerMatch(parseInt(playerId));
@@ -29,8 +27,6 @@ export default function Lobby() {
       }
     } catch (err) {
       console.error('Failed to fetch current match:', err);
-    } finally {
-      setLoadingCurrentMatch(false);
     }
   };
 
@@ -46,10 +42,8 @@ export default function Lobby() {
       setLoading(false);
     }
   };
-
   const handleJoinMatch = async (matchId: number) => {
     try {
-      // We'd need the current player ID - this should come from auth context or localStorage
       const playerId = localStorage.getItem('playerId');
       if (!playerId) {
         setError('Player ID not found. Please log in again.');
@@ -57,32 +51,28 @@ export default function Lobby() {
       }
 
       await api.joinMatch(matchId, parseInt(playerId));
-      // Refresh current match status
-      await fetchCurrentPlayerMatch();
       navigate('/game', { state: { matchId } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join match');
     }
   };
 
-  const handleLeaveMatch = async () => {
-    if (!currentMatch) return;
-    
-    try {
-      const playerId = localStorage.getItem('playerId');
-      if (!playerId) {
-        setError('Player ID not found. Please log in again.');
-        return;
+  const handleExitMatch = async () => {
+    // Exit current match if player is in one
+    if (currentMatch) {
+      try {
+        const playerId = localStorage.getItem('playerId');
+        if (playerId) {
+          await api.leaveMatch(currentMatch.id, parseInt(playerId));
+          setCurrentMatch(null);
+          await fetchActiveMatches();
+        }
+      } catch (error) {
+        console.error('Error leaving match:', error);
+        setError('Failed to exit match. Please try again.');
       }
-
-      await api.leaveMatch(currentMatch.id, parseInt(playerId));
-      setCurrentMatch(null);
-      // Refresh the matches list
-      await fetchActiveMatches();
-      setError('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to leave match');
     }
+    navigate('/menu');
   };
 
   return (
@@ -106,9 +96,7 @@ export default function Lobby() {
         }}>
           Match created successfully! ID: {createdMatchId}
         </div>
-      )}
-
-      {error && (
+      )}      {error && (
         <div style={{
           backgroundColor: '#e74c3c',
           color: 'white',
@@ -117,64 +105,6 @@ export default function Lobby() {
           marginBottom: '20px'
         }}>
           {error}
-        </div>
-      )}
-
-      {/* Current Match Status */}
-      {!loadingCurrentMatch && currentMatch && (
-        <div style={{
-          backgroundColor: '#ff4757',
-          color: 'white',
-          padding: '15px 20px',
-          borderRadius: '8px',
-          marginBottom: '20px',
-          maxWidth: '400px',
-          width: '100%'
-        }}>
-          <h4 style={{ margin: '0 0 10px 0' }}>You are currently in a match</h4>
-          <p style={{ margin: '5px 0', fontSize: '14px' }}>
-            Map: <strong>{currentMatch.mapName}</strong>
-          </p>
-          <p style={{ margin: '5px 0', fontSize: '14px' }}>
-            Players: {currentMatch.players?.length || 0}/{currentMatch.maxPlayers}
-          </p>
-          <div style={{ 
-            display: 'flex', 
-            gap: '10px', 
-            marginTop: '15px',
-            justifyContent: 'center'
-          }}>
-            <button
-              onClick={() => navigate('/game', { state: { matchId: currentMatch.id } })}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#27ae60',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                cursor: 'pointer'
-              }}
-            >
-              Rejoin Game
-            </button>
-            <button
-              onClick={handleLeaveMatch}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#e74c3c',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                cursor: 'pointer'
-              }}
-            >
-              Leave Match
-            </button>
-          </div>
         </div>
       )}
 
@@ -219,10 +149,8 @@ export default function Lobby() {
           onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#5352ed'}
         >
           Refresh
-        </button>
-        
-        <button 
-          onClick={() => navigate('/menu')}
+        </button>        <button 
+          onClick={handleExitMatch}
           style={{
             padding: '12px 24px',
             backgroundColor: 'transparent',
@@ -243,7 +171,7 @@ export default function Lobby() {
             e.currentTarget.style.color = '#a4b0be';
           }}
         >
-          Back to Menu
+          Exit Match
         </button>
       </div>
 

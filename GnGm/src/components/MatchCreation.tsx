@@ -17,7 +17,6 @@ export default function MatchCreation() {
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-
   const handleCreateMatch = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
@@ -27,8 +26,8 @@ export default function MatchCreation() {
       const match = await api.createMatch(mapName, maxPlayers);
       console.log('Match created:', match);
       
-      // Navigate to lobby or game screen
-      navigate('/lobby', { state: { matchId: match.id } });
+      // Navigate directly to the game since player is automatically joined
+      navigate('/game', { state: { matchId: match.id } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create match');
     } finally {
