@@ -21,9 +21,7 @@ public class GameWebSocketController {
         this.gameEngineService = gameEngineService;
         this.botManager = botManager;
         this.messagingTemplate = messagingTemplate;
-    }
-
-    @MessageMapping("/game/move")
+    }    @MessageMapping("/game/move")
     @SendTo("/topic/game/state")
     public void handleMovement(MovementMessage message) {
         gameEngineService.updatePlayerMovement(
@@ -32,6 +30,24 @@ public class GameWebSocketController {
             message.getDeltaY(),
             message.getRotation()
         );
+        broadcastGameState();
+    }
+
+    @MessageMapping("/game/join")
+    public void handlePlayerJoin(PlayerJoinMessage message) {
+        // Initialize player if not already initialized
+        if (gameEngineService.getPlayerState(message.getPlayerId()) == null) {
+            // Create a simple Player object for initialization
+            com.gngm.entity.Player player = new com.gngm.entity.Player();
+            player.setId(message.getPlayerId());
+            player.setUsername(message.getUsername());
+            
+            // Initialize player with random starting position
+            gameEngineService.initializePlayerWithPosition(player, 
+                Math.random() * 800 + 100, // Random X between 100-900
+                Math.random() * 600 + 100  // Random Y between 100-700
+            );
+        }
         broadcastGameState();
     }
 
@@ -128,10 +144,20 @@ public class GameWebSocketController {
         public Map<Long, GameEngineService.PlayerState> getPlayerStates() { return playerStates; }
         public void setPlayerStates(Map<Long, GameEngineService.PlayerState> playerStates) {
             this.playerStates = playerStates;
-        }
-        public Map<Long, GameEngineService.Projectile> getProjectiles() { return projectiles; }
+        }        public Map<Long, GameEngineService.Projectile> getProjectiles() { return projectiles; }
         public void setProjectiles(Map<Long, GameEngineService.Projectile> projectiles) {
             this.projectiles = projectiles;
         }
+    }
+
+    public static class PlayerJoinMessage {
+        private long playerId;
+        private String username;
+
+        // Getters and setters
+        public long getPlayerId() { return playerId; }
+        public void setPlayerId(long playerId) { this.playerId = playerId; }
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
     }
 } 

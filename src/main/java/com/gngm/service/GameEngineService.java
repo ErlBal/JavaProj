@@ -95,10 +95,17 @@ public class GameEngineService {
         public void setDamage(int damage) { this.damage = damage; }
         public long getPlayerId() { return playerId; }
         public void setPlayerId(long playerId) { this.playerId = playerId; }
+    }    public void initializePlayer(Player player) {
+        PlayerState state = new PlayerState(0, 0);
+        // Set default weapon to pistol
+        Weapon pistol = weaponRepository.findByName("Pistol").orElse(null);
+        state.setCurrentWeapon(pistol);
+        state.setUsername(player.getUsername());
+        playerStates.put(player.getId(), state);
     }
 
-    public void initializePlayer(Player player) {
-        PlayerState state = new PlayerState(0, 0);
+    public void initializePlayerWithPosition(Player player, double x, double y) {
+        PlayerState state = new PlayerState(x, y);
         // Set default weapon to pistol
         Weapon pistol = weaponRepository.findByName("Pistol").orElse(null);
         state.setCurrentWeapon(pistol);
@@ -112,10 +119,9 @@ public class GameEngineService {
             // Calculate new position
             double newX = state.getX() + deltaX * MOVEMENT_SPEED;
             double newY = state.getY() + deltaY * MOVEMENT_SPEED;
-            
-            // Get canvas dimensions from the client
+              // Get canvas dimensions from the client
             double canvasWidth = 1000;  // Default width
-            double canvasHeight = 1000; // Default height
+            double canvasHeight = 800; // Match frontend canvas height
             
             // Boundary checks
             newX = Math.max(0, Math.min(newX, canvasWidth));
@@ -149,10 +155,9 @@ public class GameEngineService {
         activeProjectiles.forEach((id, projectile) -> {
             double newX = projectile.getX() + Math.cos(projectile.getDirection()) * projectile.getSpeed();
             double newY = projectile.getY() + Math.sin(projectile.getDirection()) * projectile.getSpeed();
-            
-            // Get canvas dimensions
+              // Get canvas dimensions
             double canvasWidth = 1000;  // Default width
-            double canvasHeight = 1000; // Default height
+            double canvasHeight = 800; // Match frontend canvas height
             
             // Check if projectile is out of bounds
             if (newX < 0 || newX > canvasWidth || newY < 0 || newY > canvasHeight) {
