@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/matches")
@@ -45,8 +47,25 @@ public class MatchController {
         return ResponseEntity.ok(matchService.getActiveMatches());
     }
 
+    @PostMapping("/{matchId}/leave")
+    public ResponseEntity<Match> leaveMatch(
+            @PathVariable Long matchId,
+            @RequestParam Long playerId) {
+        return ResponseEntity.ok(matchService.leaveMatch(matchId, playerId));
+    }
+
+    @GetMapping("/player/{playerId}/current")
+    public ResponseEntity<Match> getCurrentPlayerMatch(@PathVariable Long playerId) {
+        Optional<Match> activeMatch = matchService.findPlayerActiveMatch(playerId);
+        if (activeMatch.isPresent()) {
+            return ResponseEntity.ok(activeMatch.get());
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/player/{playerId}")
     public ResponseEntity<List<Match>> getPlayerMatches(@PathVariable Long playerId) {
         return ResponseEntity.ok(matchService.getPlayerMatches(playerId));
     }
-} 
+}

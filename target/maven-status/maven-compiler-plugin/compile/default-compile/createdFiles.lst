@@ -6,6 +6,7 @@ com\gngm\controller\AdminController.class
 com\gngm\security\JwtService.class
 com\gngm\config\SecurityConfig.class
 com\gngm\service\PlayerService.class
+com\gngm\config\WebSocketEventListener.class
 com\gngm\dto\AuthenticationResponse$AuthenticationResponseBuilder.class
 com\gngm\entity\Weapon.class
 com\gngm\controller\GameWebSocketController$MovementMessage.class

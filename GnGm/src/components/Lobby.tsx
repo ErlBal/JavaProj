@@ -8,13 +8,31 @@ export default function Lobby() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
+  const [loadingCurrentMatch, setLoadingCurrentMatch] = useState(true);
 
   // Check if we were redirected here after creating a match
   const createdMatchId = location.state?.matchId;
 
   useEffect(() => {
     fetchActiveMatches();
+    fetchCurrentPlayerMatch();
   }, []);
+
+  const fetchCurrentPlayerMatch = async () => {
+    try {
+      setLoadingCurrentMatch(true);
+      const playerId = localStorage.getItem('playerId');
+      if (playerId) {
+        const match = await api.getCurrentPlayerMatch(parseInt(playerId));
+        setCurrentMatch(match);
+      }
+    } catch (err) {
+      console.error('Failed to fetch current match:', err);
+    } finally {
+      setLoadingCurrentMatch(false);
+    }
+  };
 
   const fetchActiveMatches = async () => {
     try {
@@ -39,9 +57,31 @@ export default function Lobby() {
       }
 
       await api.joinMatch(matchId, parseInt(playerId));
+      // Refresh current match status
+      await fetchCurrentPlayerMatch();
       navigate('/game', { state: { matchId } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join match');
+    }
+  };
+
+  const handleLeaveMatch = async () => {
+    if (!currentMatch) return;
+    
+    try {
+      const playerId = localStorage.getItem('playerId');
+      if (!playerId) {
+        setError('Player ID not found. Please log in again.');
+        return;
+      }
+
+      await api.leaveMatch(currentMatch.id, parseInt(playerId));
+      setCurrentMatch(null);
+      // Refresh the matches list
+      await fetchActiveMatches();
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to leave match');
     }
   };
 
@@ -80,8 +120,66 @@ export default function Lobby() {
         </div>
       )}
 
-      <div style={{ 
-        display: 'flex', 
+      {/* Current Match Status */}
+      {!loadingCurrentMatch && currentMatch && (
+        <div style={{
+          backgroundColor: '#ff4757',
+          color: 'white',
+          padding: '15px 20px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          maxWidth: '400px',
+          width: '100%'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0' }}>You are currently in a match</h4>
+          <p style={{ margin: '5px 0', fontSize: '14px' }}>
+            Map: <strong>{currentMatch.mapName}</strong>
+          </p>
+          <p style={{ margin: '5px 0', fontSize: '14px' }}>
+            Players: {currentMatch.players?.length || 0}/{currentMatch.maxPlayers}
+          </p>
+          <div style={{ 
+            display: 'flex', 
+            gap: '10px', 
+            marginTop: '15px',
+            justifyContent: 'center'
+          }}>
+            <button
+              onClick={() => navigate('/game', { state: { matchId: currentMatch.id } })}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#27ae60',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Rejoin Game
+            </button>
+            <button
+              onClick={handleLeaveMatch}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#e74c3c',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Leave Match
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div style={{
+        display: 'flex',
         gap: '20px',
         marginBottom: '30px'
       }}>

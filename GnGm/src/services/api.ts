@@ -121,5 +121,38 @@ export const api = {
     }
 
     return response.json();
+  },
+  async getCurrentPlayerMatch(playerId: number): Promise<Match | null> {
+    const response = await fetch(`${API_URL}/matches/player/${playerId}/current`, {
+      method: 'GET',
+      headers: {
+        ...this.getAuthHeader(),
+      },
+    });
+
+    if (response.status === 404) {
+      return null; // No active match
+    }
+
+    if (!response.ok) {
+      throw new Error('Failed to get current player match');
+    }
+
+    return response.json();
+  },
+
+  async leaveMatch(matchId: number, playerId: number): Promise<Match> {
+    const response = await fetch(`${API_URL}/matches/${matchId}/leave?playerId=${playerId}`, {
+      method: 'POST',
+      headers: {
+        ...this.getAuthHeader(),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to leave match');
+    }
+
+    return response.json();
   }
-}; 
+};
