@@ -1,59 +1,157 @@
+# ====================================
+# Java Spring Boot + React Project
+# ====================================
+
 # Compiled class files
 /target/
+/build/
 
 # Logs
 *.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # Maven
 .mvn/
 !/.mvn/wrapper/maven-wrapper.jar
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
 
 # Eclipse
 .classpath
 .project
 .settings/
+.apt_generated
+.factorypath
+.springBeans
+.sts4-cache
+bin/
 
 # IntelliJ IDEA
 .idea/
 *.iml
 *.iws
+*.ipr
 out/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
 
 # VS Code
 .vscode/
+*.code-workspace
+.history/
 
 # OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Environment files
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+application-dev.properties
+application-prod.properties
+application-test.properties
+application-local.properties
 
-# Database
+# Database files
 *.h2.db
 *.mv.db
+*.db
+*.sqlite
+*.sqlite3
 
 # Redis dump
 *.rdb
+dump.rdb
 
-# Node modules (if you add frontend with npm)
+# Security files
+*.jks
+*.p12
+*.pfx
+*.key
+*.pem
+
+# ====================================
+# Frontend (React/Node.js)
+# ====================================
+
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
 
-# Other
-*.swp
-*.swo
-
-# Ignore application secrets (if any)
-application-local.properties
-
-# Frontend (Vite/React)
+# Production builds
 GnGm/dist/
-GnGm/node_modules/
-GnGm/.env
-GnGm/.env.local
-GnGm/.env.*.local
+GnGm/build/
+frontend/build/
+frontend/dist/
 
-### Java ###
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Temporary folders
+tmp/
+temp/
+
+# ====================================
+# Java Specific
+# ====================================
+
 *.class
 *.jar
 *.war
@@ -65,54 +163,95 @@ GnGm/.env.*.local
 hs_err_pid*
 replay_pid*
 
-### Maven ###
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
+# ====================================
+# Game Development Specific
+# ====================================
 
-### IntelliJ IDEA ###
-*.ipr
+# Game assets that might be large
+*.wav
+*.mp3
+*.ogg
+*.mp4
+*.avi
+*.mov
+*.gif
+*.png
+*.jpg
+*.jpeg
+*.psd
+*.ai
 
-### VS Code ###
-*.code-workspace
-.history/
+# Except small UI assets
+!src/main/resources/static/**/*.png
+!src/main/resources/static/**/*.jpg
+!src/main/resources/static/**/*.gif
+!**/public/**/*.png
+!**/public/**/*.jpg
+!**/public/**/*.svg
+!**/src/assets/**/*.png
+!**/src/assets/**/*.jpg
+!**/src/assets/**/*.svg
 
-### Eclipse ###
-.apt_generated
-.factorypath
-.springBeans
-.sts4-cache
-bin/
+# Game configuration that shouldn't be committed
+game-config-local.properties
+player-data/
+match-history/
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
+# ====================================
+# Testing
+# ====================================
 
-### Spring Boot ###
-spring-boot-starter/
-spring-boot-starter-test/
-spring-boot-starter-web/
-spring-boot-starter-data-jpa/
-spring-boot-starter-security/
-spring-boot-starter-websocket/
-spring-boot-starter-validation/
-spring-boot-starter-data-redis/
+# Test results
+test-results/
+coverage/
+.nyc_output
 
-### Application Properties ###
-application-dev.properties
-application-prod.properties
-application-test.properties
+# JUnit
+TEST-*.xml
 
-### Logs ###
-logs/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log* 
+# ====================================
+# Misc
+# ====================================
+
+*.swp
+*.swo
+*~
+.vimrc.local
+
+# Package files
+*.dmg
+*.iso
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Archive files
+*.7z
+
+# Windows thumbnail cache
+ehthumbs_vista.db
+
+# Folder config file
+[Dd]esktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Mac folder attributes
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Spring Boot DevTools
+.spring-boot-devtools.properties

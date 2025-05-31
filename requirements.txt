@@ -1,0 +1,292 @@
+# GnGm Game - Project Requirements
+# ================================
+# This file documents all the dependencies and requirements for the GnGm multiplayer game project.
+
+# ================================
+# BACKEND REQUIREMENTS (Java)
+# ================================
+
+# Java Runtime
+# - Java 17 or higher
+
+# Build Tool
+# - Apache Maven 3.8.0 or higher
+
+# Database
+# - PostgreSQL 14.0 or higher (production)
+# - H2 Database (embedded, for development/testing)
+
+# Cache/Session Store
+# - Redis 6.0 or higher (or Memurai for Windows)
+
+# ================================
+# FRONTEND REQUIREMENTS (React)
+# ================================
+
+# Node.js Runtime
+# - Node.js 18.0 or higher
+# - npm 8.0 or higher (or yarn 1.22.0+)
+
+# ================================
+# DEVELOPMENT TOOLS
+# ================================
+
+# IDE/Editors
+# - IntelliJ IDEA (recommended) or VS Code
+# - Cursor (if using AI-assisted development)
+
+# Database Management
+# - pgAdmin 4 (for PostgreSQL management)
+# - Redis Desktop Manager or RedisInsight (for Redis management)
+
+# Version Control
+# - Git 2.30.0 or higher
+
+# API Testing
+# - Postman or similar REST client
+
+# ================================
+# MAVEN DEPENDENCIES (pom.xml)
+# ================================
+
+# Spring Boot Framework
+# - spring-boot-starter-web: 3.2.3
+# - spring-boot-starter-websocket: 3.2.3
+# - spring-boot-starter-security: 3.2.3
+# - spring-boot-starter-data-jpa: 3.2.3
+# - spring-boot-starter-validation: 3.2.3
+# - spring-boot-starter-data-redis: 3.2.3
+# - spring-boot-starter-test: 3.2.3
+
+# Database Drivers
+# - postgresql: runtime scope
+# - h2: test scope
+
+# Utility Libraries
+# - lombok: 1.18.30 (optional, compile-time)
+# - mapstruct: 1.5.5.Final (object mapping)
+
+# Security
+# - jjwt-api: 0.11.5 (JWT tokens)
+# - jjwt-impl: 0.11.5
+# - jjwt-jackson: 0.11.5
+
+# ================================
+# NPM DEPENDENCIES (package.json)
+# ================================
+
+# React Core
+# - react: ^18.2.0
+# - react-dom: ^18.2.0
+# - react-router-dom: ^6.8.0
+
+# TypeScript
+# - typescript: ^5.0.0
+# - @types/react: ^18.0.0
+# - @types/react-dom: ^18.0.0
+
+# Build Tools
+# - vite: ^4.4.5 (for GnGm folder)
+# - @vitejs/plugin-react: ^4.0.3
+
+# Development Tools
+# - eslint: ^8.45.0
+# - @typescript-eslint/eslint-plugin: ^6.0.0
+# - @typescript-eslint/parser: ^6.0.0
+
+# ================================
+# SYSTEM REQUIREMENTS
+# ================================
+
+# Operating System
+# - Windows 10/11 (current development environment)
+# - macOS 10.15+ (compatible)
+# - Linux Ubuntu 18.04+ (compatible)
+
+# Memory
+# - Minimum: 4GB RAM
+# - Recommended: 8GB RAM or higher
+
+# Storage
+# - Minimum: 2GB free space
+# - Recommended: 5GB free space
+
+# Network
+# - Internet connection for downloading dependencies
+# - Local network access for multiplayer testing
+
+# ================================
+# GAME-SPECIFIC REQUIREMENTS
+# ================================
+
+# Browser Support (Frontend)
+# - Chrome 90+
+# - Firefox 88+
+# - Safari 14+
+# - Edge 90+
+
+# WebSocket Support
+# - Modern browsers with WebSocket API support
+
+# Graphics
+# - HTML5 Canvas support
+# - Hardware-accelerated graphics (recommended)
+
+# Audio
+# - Web Audio API support for sound effects
+
+# ================================
+# INSTALLATION COMMANDS
+# ================================
+
+# Backend Setup:
+# 1. Install Java 17
+# 2. Install Maven
+# 3. Install PostgreSQL
+# 4. Install Redis/Memurai
+# 5. Clone repository
+# 6. Run: mvn clean install
+# 7. Run: mvn spring-boot:run
+
+# Frontend Setup (GnGm folder):
+# 1. Install Node.js 18+
+# 2. Navigate to GnGm folder
+# 3. Run: npm install
+# 4. Run: npm run dev
+
+# Database Setup:
+# 1. Create PostgreSQL database: gngm_db
+# 2. Update application.properties with DB credentials
+# 3. Spring Boot will auto-create tables on first run
+
+# Redis Setup:
+# 1. Start Redis server on localhost:6379
+# 2. No additional configuration needed for default setup
+
+# ================================
+# ENVIRONMENT VARIABLES (Optional)
+# ================================
+
+# Database Configuration
+# DB_URL=jdbc:postgresql://localhost:5432/gngm_db
+# DB_USERNAME=postgres
+# DB_PASSWORD=your_password
+
+# Redis Configuration
+# REDIS_HOST=localhost
+# REDIS_PORT=6379
+
+# JWT Configuration
+# JWT_SECRET=your_secret_key
+# JWT_EXPIRATION=86400000
+
+# Server Configuration
+# SERVER_PORT=9090
+
+# ================================
+# TESTING REQUIREMENTS
+# ================================
+
+# Unit Testing
+# - JUnit 5 (included in spring-boot-starter-test)
+# - Mockito (included in spring-boot-starter-test)
+
+# Integration Testing
+# - TestContainers (for database testing)
+# - MockMvc (for web layer testing)
+
+# Frontend Testing
+# - Jest (included with React)
+# - React Testing Library
+
+# ================================
+# PRODUCTION DEPLOYMENT (Future)
+# ================================
+
+# Application Server
+# - Embedded Tomcat (default with Spring Boot)
+# - Or external Tomcat/Jetty
+
+# Database
+# - PostgreSQL (production database)
+# - Connection pooling (HikariCP - included with Spring Boot)
+
+# Reverse Proxy
+# - Nginx (recommended for static file serving)
+
+# Monitoring
+# - Spring Boot Actuator
+# - Micrometer metrics
+
+# Security
+# - HTTPS/TLS certificates
+# - Firewall configuration
+# - Database security hardening
+
+# ================================
+# VERSION COMPATIBILITY MATRIX
+# ================================
+
+# Java 17 ↔ Spring Boot 3.2.3 ✓
+# Spring Boot 3.2.3 ↔ PostgreSQL 42.x ✓
+# Node.js 18+ ↔ React 18.2.0 ✓
+# React 18.2.0 ↔ TypeScript 5.0+ ✓
+# Vite 4.4.5 ↔ React 18.2.0 ✓
+
+# ================================
+# KNOWN ISSUES & SOLUTIONS
+# ================================
+
+# Issue: JWT Token expiration
+# Solution: Implement refresh token mechanism
+
+# Issue: WebSocket connection drops
+# Solution: Implement reconnection logic with exponential backoff
+
+# Issue: Database connection timeout
+# Solution: Configure connection pool settings in application.properties
+
+# Issue: CORS errors in development
+# Solution: Configured in WebConfig.java for localhost:5173
+
+# ================================
+# PERFORMANCE RECOMMENDATIONS
+# ================================
+
+# Backend
+# - Configure JVM heap size: -Xmx2g
+# - Use connection pooling for database
+# - Implement caching with Redis for frequently accessed data
+
+# Frontend
+# - Use React.memo for expensive components
+# - Implement lazy loading for routes
+# - Optimize bundle size with code splitting
+
+# Database
+# - Create indexes for frequently queried columns
+# - Use database connection pooling
+# - Regular database maintenance and optimization
+
+# ================================
+# SECURITY CONSIDERATIONS
+# ================================
+
+# Authentication
+# - JWT tokens with proper expiration
+# - Secure password hashing (BCrypt)
+# - Rate limiting for login attempts
+
+# Authorization
+# - Role-based access control
+# - API endpoint protection
+# - Input validation and sanitization
+
+# Data Protection
+# - Database encryption at rest
+# - HTTPS for all communications
+# - Secure session management
+
+# ================================
+# Last Updated: May 31, 2025
+# ================================

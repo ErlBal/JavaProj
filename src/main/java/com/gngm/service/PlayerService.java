@@ -24,6 +24,7 @@ public class PlayerService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    @Transactional
     public Player registerPlayer(PlayerRegistrationRequest request) {
         if (playerRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Username already exists");

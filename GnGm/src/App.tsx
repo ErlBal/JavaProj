@@ -1,11 +1,12 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import AuthForm from './components/AuthForm';
 import MainMenu from './components/MainMenu';
+import MatchCreation from './components/MatchCreation';
 import Lobby from './components/Lobby';
 import Game from './components/Game';
 import { isLoggedIn } from './utils/auth';
 
-function RequireAuth({ children }: { children: JSX.Element }) {
+function RequireAuth({ children }: { children: React.ReactElement }) {
   const location = useLocation();
   if (!isLoggedIn()) {
     return <Navigate to="/" state={{ from: location }} replace />;
@@ -20,6 +21,11 @@ export default function App() {
       <Route path="/menu" element={
         <RequireAuth>
           <MainMenu />
+        </RequireAuth>
+      } />
+      <Route path="/create-match" element={
+        <RequireAuth>
+          <MatchCreation />
         </RequireAuth>
       } />
       <Route path="/lobby" element={
