@@ -77,11 +77,15 @@ const Game: React.FC = () => {
           }
         });
         
-        // Join the game
-        const playerId = Date.now() % 10000; // Simple ID
+        // Check if playerId exists in localStorage
+        const storedPlayerId = localStorage.getItem('playerId');
+        const playerId = storedPlayerId ? parseInt(storedPlayerId) : Date.now() % 10000;
+        if (!storedPlayerId) {
+          localStorage.setItem('playerId', playerId.toString());
+        }
         const username = `Player${playerId}`;
-        localStorage.setItem('playerId', playerId.toString());
         
+        // Publish join message
         client.publish({
           destination: '/app/game/join',
           body: JSON.stringify({ playerId, username })

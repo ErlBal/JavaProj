@@ -2,6 +2,7 @@ package com.gngm.config;
 
 import com.gngm.service.MatchService;
 import com.gngm.service.PlayerService;
+import com.gngm.service.GameEngineService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,14 +21,16 @@ public class WebSocketEventListener {
     
     private final MatchService matchService;
     private final PlayerService playerService;
+    private final GameEngineService gameEngineService;
     
     // Track connected players by session ID
     private final ConcurrentHashMap<String, Long> connectedPlayers = new ConcurrentHashMap<>();
 
     @Autowired
-    public WebSocketEventListener(MatchService matchService, PlayerService playerService) {
+    public WebSocketEventListener(MatchService matchService, PlayerService playerService, GameEngineService gameEngineService) {
         this.matchService = matchService;
         this.playerService = playerService;
+        this.gameEngineService = gameEngineService;
     }
 
     @EventListener
@@ -44,15 +47,15 @@ public class WebSocketEventListener {
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         String sessionId = headerAccessor.getSessionId();
-        
+
         logger.info("WebSocket connection closed: {}", sessionId);
-        
+
         // Get the player ID for this session
         Long playerId = connectedPlayers.remove(sessionId);
-        
+
         if (playerId != null) {
             try {
-                // Find any active match this player is in and remove them
+                // Remove player from active matches
                 var playerMatches = matchService.getPlayerMatches(playerId);
                 for (var match : playerMatches) {
                     if (match.getIsActive()) {
@@ -60,8 +63,11 @@ public class WebSocketEventListener {
                         matchService.leaveMatch(match.getId(), playerId);
                     }
                 }
+                // Remove player from game engine
+                gameEngineService.removePlayer(playerId.intValue());
+                logger.info("Player disconnected: {}", playerId);
             } catch (Exception e) {
-                logger.error("Error removing disconnected player {} from matches: {}", playerId, e.getMessage());
+                logger.error("Error handling disconnection for player {}: {}", playerId, e.getMessage());
             }
         }
     }
