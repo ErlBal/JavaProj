@@ -32,31 +32,17 @@ public class AuthController {
         this.userDetailsService = userDetailsService;
         this.gameEngineService = gameEngineService;
         this.messagingTemplate = messagingTemplate;
-    }
-
-    @PostMapping("/register")
+    }    @PostMapping("/register")
     public AuthenticationResponse register(@RequestBody PlayerRegistrationRequest request) {
         Player player = playerService.registerPlayer(request);
-        gameEngineService.initializePlayer(player);
-        // Broadcast game state after registration
-        messagingTemplate.convertAndSend("/topic/game/state", new GameWebSocketController.GameStateMessage(
-            gameEngineService.getPlayerStates(),
-            gameEngineService.getActiveProjectiles()
-        ));
+        // Player will be initialized in game state when they join via WebSocket
         UserDetails userDetails = userDetailsService.loadUserByUsername(player.getUsername());
         String jwt = jwtService.generateToken(userDetails);
         return AuthenticationResponse.builder().token(jwt).id(player.getId()).build();
-    }
-
-    @PostMapping("/login")
+    }    @PostMapping("/login")
     public AuthenticationResponse login(@RequestBody AuthenticationRequest request) {
         Player player = playerService.authenticatePlayer(request);
-        gameEngineService.initializePlayer(player);
-        // Broadcast game state after login
-        messagingTemplate.convertAndSend("/topic/game/state", new GameWebSocketController.GameStateMessage(
-            gameEngineService.getPlayerStates(),
-            gameEngineService.getActiveProjectiles()
-        ));
+        // Player will be initialized in game state when they join via WebSocket
         UserDetails userDetails = userDetailsService.loadUserByUsername(player.getUsername());
         String jwt = jwtService.generateToken(userDetails);
         return AuthenticationResponse.builder().token(jwt).id(player.getId()).build();

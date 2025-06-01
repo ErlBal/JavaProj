@@ -62,8 +62,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- GAME LOGIC ---
-class Game {
-    constructor(playerId) {
+class Game {    constructor(playerId) {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.playerId = playerId;
@@ -73,6 +72,11 @@ class Game {
         };
         this.keys = new Set();
         this.mousePosition = { x: 0, y: 0 };
+        
+        // Debug flags to prevent console spam
+        this.debugLogged = false;
+        this.playerDebugLogged = false;
+        this.colorDebugLogged = false;
         
         // Resize canvas initially and on window resize
         this.resizeCanvas();
@@ -88,6 +92,16 @@ class Game {
         const container = document.getElementById('gameContainer');
         this.canvas.width = container.clientWidth;
         this.canvas.height = container.clientHeight;
+        
+        // Add debug logging for canvas resize
+        console.log(`Canvas resized to: ${this.canvas.width}x${this.canvas.height}`);
+        
+        // Ensure minimum canvas size
+        if (this.canvas.width === 0 || this.canvas.height === 0) {
+            this.canvas.width = 800;
+            this.canvas.height = 600;
+            console.log(`Canvas had zero dimensions, set to default: ${this.canvas.width}x${this.canvas.height}`);
+        }
     }
 
     setupBotControls() {
@@ -114,6 +128,31 @@ class Game {
                 console.error("WebSocket not connected");
             }
         };
+
+        // Add debug button handler
+        document.querySelector('#debugBtn').onclick = () => {
+            console.log("=== MANUAL DEBUG INFO ===");
+            console.log(`Canvas dimensions: ${this.canvas.width}x${this.canvas.height}`);
+            console.log(`Canvas style: ${this.canvas.style.cssText}`);
+            console.log(`Game container style: ${document.getElementById('gameContainer').style.cssText}`);
+            console.log(`Player ID: ${this.playerId}`);
+            console.log(`Game state players:`, this.gameState.playerStates);
+            
+            const currentPlayer = this.gameState.playerStates.get(this.playerId.toString());
+            if (currentPlayer) {
+                console.log(`Current player state:`, currentPlayer);
+                const canvasX = (currentPlayer.x / 1000) * this.canvas.width;
+                const canvasY = (currentPlayer.y / 1000) * this.canvas.height;
+                console.log(`Canvas position: (${canvasX}, ${canvasY})`);
+                
+                // Draw a test rectangle to verify canvas is working
+                this.ctx.fillStyle = '#00ff00';
+                this.ctx.fillRect(canvasX - 25, canvasY - 25, 50, 50);
+                console.log("Drew green test rectangle at player position");
+            } else {
+                console.log("❌ Current player not found in game state!");
+            }
+        };
     }
 
     setupWebSocket() {
@@ -122,8 +161,7 @@ class Game {
         
         // Disable debug logging
         // this.stompClient.debug = null;
-        
-        this.stompClient.connect({}, frame => {
+          this.stompClient.connect({}, frame => {
             console.log('Connected to WebSocket');
             
             // Subscribe to game state updates
@@ -131,6 +169,13 @@ class Game {
                 const state = JSON.parse(message.body);
                 this.updateGameState(state);
             });
+
+            // Send join message to initialize player in game engine
+            console.log('Sending join message for player ID:', this.playerId);
+            this.stompClient.send("/app/game/join", {}, JSON.stringify({
+                playerId: this.playerId,
+                username: "Player" + this.playerId
+            }));
         });
     }
 
@@ -150,12 +195,13 @@ class Game {
 
         // Mouse click for shooting
         this.canvas.addEventListener('click', () => this.shoot());
-    }
-
-    updateGameState(state) {
+    }    updateGameState(state) {
         // Update player states
         this.gameState.playerStates = new Map(Object.entries(state.playerStates));
         this.gameState.projectiles = new Map(Object.entries(state.projectiles));
+        
+        console.log('Updated game state. Players:', this.gameState.playerStates.size, 'Projectiles:', this.gameState.projectiles.size);
+        console.log('Player states:', this.gameState.playerStates);
         
         // Update health bar
         if (this.playerId && this.gameState.playerStates.has(this.playerId.toString())) {
@@ -227,17 +273,45 @@ class Game {
                 direction: direction
             }));
         }
-    }
-
-    render() {
+    }    render() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Draw a subtle background grid or border to confirm canvas is visible
+        this.ctx.strokeStyle = '#444';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(0, 0, this.canvas.width, this.canvas.height);
 
         // Calculate player size based on canvas size
         const minDim = Math.min(this.canvas.width, this.canvas.height);
-        const playerSize = Math.max(30, Math.min(80, minDim * 0.02)); // Adjusted calculation again
+        const playerSize = Math.max(30, Math.min(80, minDim * 0.02)); // Adjusted calculation again        // Add one-time debug logging to avoid console spam
+        if (!this.debugLogged) {
+            console.log("=== DETAILED RENDER DEBUG (ONE TIME) ===");
+            console.log(`Canvas size: ${this.canvas.width}x${this.canvas.height}`);
+            console.log(`Players count: ${this.gameState.playerStates.size}`);
+            console.log(`Current player ID: ${this.playerId} (type: ${typeof this.playerId})`);
+            this.debugLogged = true;
+        }
 
         // Draw players
         this.gameState.playerStates.forEach((state, id) => {
+            // Only log debug info once per player to avoid spam
+            if (!this.playerDebugLogged) {
+                console.log("=== PLAYER RENDER DEBUG ===");
+                console.log(`Player ID from state: ${id} (type: ${typeof id})`);
+                console.log(`Player state:`, state);
+                console.log(`ID comparison: ${id} === ${this.playerId.toString()} = ${id === this.playerId.toString()}`);
+                
+                // Scale position to canvas size
+                const x = (state.x / 1000) * this.canvas.width;
+                const y = (state.y / 1000) * this.canvas.height;
+                
+                console.log(`Game position: (${state.x}, ${state.y})`);
+                console.log(`Canvas position: (${x}, ${y})`);
+                console.log(`Canvas bounds: width=${this.canvas.width}, height=${this.canvas.height}`);
+                
+                this.playerDebugLogged = true;
+            }
+            
             // Scale position to canvas size
             const x = (state.x / 1000) * this.canvas.width;
             const y = (state.y / 1000) * this.canvas.height;
@@ -246,26 +320,40 @@ class Game {
             this.ctx.translate(x, y);
             this.ctx.rotate(state.rotation);
             
-            // Draw player body
+            // Draw player body - make larger and more visible for debugging
             if (id === this.playerId.toString()) {
-                this.ctx.fillStyle = '#00ff00'; // Player is green
+                this.ctx.fillStyle = '#ff0000'; // Changed to bright red for visibility
+                if (!this.colorDebugLogged) {
+                    console.log('🔴 Drawing current player in BRIGHT RED');
+                    this.colorDebugLogged = true;
+                }
             } else if (state.username && state.username.startsWith('Bot')) {
                 this.ctx.fillStyle = '#ff9900'; // Bots are orange
+                if (!this.colorDebugLogged) {
+                    console.log('🟠 Drawing bot in ORANGE');
+                    this.colorDebugLogged = true;
+                }
             } else {
-                this.ctx.fillStyle = '#4CAF50'; // Other players are blue-green
+                this.ctx.fillStyle = '#0000ff'; // Changed to bright blue for visibility
+                if (!this.colorDebugLogged) {
+                    console.log('🔵 Drawing other player in BLUE');
+                    this.colorDebugLogged = true;
+                }
             }
-            this.ctx.fillRect(-playerSize/2, -playerSize/2, playerSize, playerSize);
             
-            // Draw weapon direction
+            // Make player larger for debugging
+            const debugPlayerSize = Math.max(50, playerSize);
+            this.ctx.fillRect(-debugPlayerSize/2, -debugPlayerSize/2, debugPlayerSize, debugPlayerSize);            
+            // Draw weapon direction  
             this.ctx.fillStyle = '#000';
-            this.ctx.fillRect(0, -playerSize/6, playerSize * 0.7, playerSize/3);
+            this.ctx.fillRect(0, -debugPlayerSize/6, debugPlayerSize * 0.7, debugPlayerSize/3);
             
             this.ctx.restore();
             
             // Draw player name
             this.ctx.fillStyle = '#fff';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(state.username || 'Player ' + id, x, y - playerSize);
+            this.ctx.fillText(state.username || 'Player ' + id, x, y - debugPlayerSize);
         });
 
         // Draw projectiles
@@ -289,5 +377,7 @@ class Game {
 }
 
 function startGame(playerId) {
+    // Show the game container
+    document.getElementById('gameContainer').style.display = 'block';
     new Game(playerId);
-} 
+}

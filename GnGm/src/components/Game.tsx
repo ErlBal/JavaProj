@@ -1,430 +1,341 @@
-import { useNavigate } from 'react-router-dom';
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { api } from '../services/api';
+import React, { useEffect, useRef, useState } from 'react';
+import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { Stomp, Client } from '@stomp/stompjs';
 
-interface PlayerState {
+// Simple types
+interface Player {
+  id: number;
+  username: string;
   x: number;
   y: number;
   rotation: number;
   health: number;
-  username: string;
-  isAlive: boolean;
-  currentWeapon?: {
-    name: string;
-    damage: number;
-    fireRate: number;
-  };
+  alive: boolean;
 }
 
 interface Projectile {
+  id: string;
   x: number;
   y: number;
   direction: number;
-  speed: number;
-  damage: number;
   playerId: number;
 }
 
 interface GameState {
-  playerStates: Record<string, PlayerState>;
-  projectiles: Record<string, Projectile>;
+  players: { [key: number]: Player };
+  projectiles: { [key: string]: Projectile };
 }
 
-export default function Game() {
-  const navigate = useNavigate();
+const Game: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stompClientRef = useRef<Client | null>(null);
-  const keysRef = useRef<Set<string>>(new Set());
-  const mousePositionRef = useRef({ x: 0, y: 0 });
-  const gameLoopRef = useRef<number | undefined>(undefined);
+  const clientRef = useRef<Client | null>(null);
   
-  const [isExiting, setIsExiting] = useState(false);
-  const [gameState, setGameState] = useState<GameState>({
-    playerStates: {},
-    projectiles: {}
-  });
-  const [isConnected, setIsConnected] = useState(false);
-  const [playerId] = useState(() => localStorage.getItem('playerId'));
-
+  // Game state
+  const [gameState, setGameState] = useState<GameState>({ players: {}, projectiles: {} });
+  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
+  const [connected, setConnected] = useState(false);
+  
+  // Input handling
+  const keysPressed = useRef<{ [key: string]: boolean }>({});
+  const mousePos = useRef({ x: 0, y: 0 });
+  
   // Game constants
-  const CANVAS_WIDTH = 1000;
-  const CANVAS_HEIGHT = 800;
-  const PLAYER_SIZE = 30;
-  const PROJECTILE_SIZE = 4;
-  const setupWebSocket = useCallback(() => {
-    if (!playerId) return;
-
-    const socket = new SockJS('http://localhost:9090/ws');
-    const client = Stomp.over(socket);
-    
-    client.configure({
-      debug: (str) => console.log('STOMP Debug:', str),
+  const WORLD_W = 1600;
+  const WORLD_H = 1200;
+  const CANVAS_W = 1000;
+  const CANVAS_H = 700;
+  const PLAYER_SIZE = 40;
+    // WebSocket connection
+  useEffect(() => {    const client = new Client({
+      webSocketFactory: () => new SockJS('http://localhost:9090/ws'),
       onConnect: () => {
-        console.log('Connected to WebSocket');
-        setIsConnected(true);
-          // Subscribe to game state updates
+        console.log('✅ Connected to game server');
+        setConnected(true);
+        
+        // Listen for game updates
         client.subscribe('/topic/game/state', (message) => {
-          const gameState = JSON.parse(message.body);
-          setGameState(gameState);
+          const state: GameState = JSON.parse(message.body);
+          setGameState(state);
+          
+          // Update current player
+          const playerId = parseInt(localStorage.getItem('playerId') || '1');
+          if (state.players[playerId]) {
+            setCurrentPlayer(state.players[playerId]);
+          }
         });
-
-        // Send join message to initialize player in game engine
-        const username = localStorage.getItem('username') || `Player${playerId}`;
+        
+        // Join the game
+        const playerId = Date.now() % 10000; // Simple ID
+        const username = `Player${playerId}`;
+        localStorage.setItem('playerId', playerId.toString());
+        
         client.publish({
           destination: '/app/game/join',
-          body: JSON.stringify({
-            playerId: parseInt(playerId),
-            username: username
-          })
+          body: JSON.stringify({ playerId, username })
         });
-
-        // Initialize player in game engine
-        api.getCurrentPlayerMatch(parseInt(playerId))
-          .then(match => {
-            if (match) {
-              // Player is in a match, initialize their state
-              console.log('Player in match:', match.id);
-            }
-          })
-          .catch(err => console.error('Error getting current match:', err));
+        
+        console.log(`🎮 Joined as ${username} (ID: ${playerId})`);
       },
       onDisconnect: () => {
-        console.log('Disconnected from WebSocket');
-        setIsConnected(false);
+        console.log('❌ Disconnected from server');
+        setConnected(false);
       },
-      onStompError: (frame) => {
-        console.error('STOMP error:', frame);
-        setIsConnected(false);
+      onStompError: (error) => {
+        console.error('WebSocket error:', error);
       }
     });
-
+    
     client.activate();
-    stompClientRef.current = client;
-  }, [playerId]);
-
-  const sendMovement = useCallback(() => {
-    if (!stompClientRef.current?.connected || !playerId) return;
-
-    const keys = keysRef.current;
-    let deltaX = 0;
-    let deltaY = 0;
-
-    if (keys.has('w') || keys.has('W')) deltaY -= 1;
-    if (keys.has('s') || keys.has('S')) deltaY += 1;
-    if (keys.has('a') || keys.has('A')) deltaX -= 1;
-    if (keys.has('d') || keys.has('D')) deltaX += 1;
-
-    if (deltaX !== 0 || deltaY !== 0) {
-      // Calculate rotation based on mouse position
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const rect = canvas.getBoundingClientRect();
-        const mouseGameX = ((mousePositionRef.current.x - rect.left) / canvas.clientWidth) * CANVAS_WIDTH;
-        const mouseGameY = ((mousePositionRef.current.y - rect.top) / canvas.clientHeight) * CANVAS_HEIGHT;
-        
-        const playerState = gameState.playerStates[playerId];
-        if (playerState) {
-          const dx = mouseGameX - playerState.x;
-          const dy = mouseGameY - playerState.y;
-          const rotation = Math.atan2(dy, dx);
-
-          stompClientRef.current.publish({
-            destination: '/app/game/move',
-            body: JSON.stringify({
-              playerId: parseInt(playerId),
-              deltaX,
-              deltaY,
-              rotation
-            })
-          });
-        }
-      }
-    }
-  }, [playerId, gameState.playerStates]);
-
-  const handleShoot = useCallback(() => {
-    if (!stompClientRef.current?.connected || !playerId) return;
-
+    clientRef.current = client;
+    
+    return () => {
+      client.deactivate();
+    };
+  }, []);
+  
+  // Keyboard input
+  useEffect(() => {
+    const keyDown = (e: KeyboardEvent) => {
+      keysPressed.current[e.key.toLowerCase()] = true;
+    };
+    
+    const keyUp = (e: KeyboardEvent) => {
+      keysPressed.current[e.key.toLowerCase()] = false;
+    };
+    
+    window.addEventListener('keydown', keyDown);
+    window.addEventListener('keyup', keyUp);
+    
+    return () => {
+      window.removeEventListener('keydown', keyDown);
+      window.removeEventListener('keyup', keyUp);
+    };
+  }, []);
+  
+  // Mouse tracking
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (canvas) {
-      const rect = canvas.getBoundingClientRect();
-      const mouseGameX = ((mousePositionRef.current.x - rect.left) / canvas.clientWidth) * CANVAS_WIDTH;
-      const mouseGameY = ((mousePositionRef.current.y - rect.top) / canvas.clientHeight) * CANVAS_HEIGHT;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    mousePos.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  };
+  
+  // Shooting
+  const handleClick = () => {
+    if (!currentPlayer || !clientRef.current || !connected) return;
+    
+    // Calculate shoot direction
+    const playerScreenX = (currentPlayer.x / WORLD_W) * CANVAS_W;
+    const playerScreenY = (currentPlayer.y / WORLD_H) * CANVAS_H;
+    
+    const dx = mousePos.current.x - playerScreenX;
+    const dy = mousePos.current.y - playerScreenY;
+    const direction = Math.atan2(dy, dx);
+    
+    // Send shoot command
+    clientRef.current.publish({
+      destination: '/app/game/shoot',
+      body: JSON.stringify({
+        playerId: currentPlayer.id,
+        direction
+      })
+    });
+    
+    console.log('💥 Shooting!');
+  };
+  
+  // Movement loop
+  useEffect(() => {
+    const moveLoop = setInterval(() => {
+      if (!currentPlayer || !clientRef.current || !connected) return;
       
-      const playerState = gameState.playerStates[playerId];
-      if (playerState) {
-        const dx = mouseGameX - playerState.x;
-        const dy = mouseGameY - playerState.y;
-        const direction = Math.atan2(dy, dx);
-
-        stompClientRef.current.publish({
-          destination: '/app/game/shoot',
+      const keys = keysPressed.current;
+      let deltaX = 0;
+      let deltaY = 0;
+      
+      // WASD movement
+      if (keys['w']) deltaY -= 5;
+      if (keys['s']) deltaY += 5;
+      if (keys['a']) deltaX -= 5;
+      if (keys['d']) deltaX += 5;
+      
+      // Calculate rotation towards mouse
+      const playerScreenX = (currentPlayer.x / WORLD_W) * CANVAS_W;
+      const playerScreenY = (currentPlayer.y / WORLD_H) * CANVAS_H;
+      const dx = mousePos.current.x - playerScreenX;
+      const dy = mousePos.current.y - playerScreenY;
+      const rotation = Math.atan2(dy, dx);
+      
+      // Send movement
+      if (deltaX !== 0 || deltaY !== 0) {
+        clientRef.current.publish({
+          destination: '/app/game/move',
           body: JSON.stringify({
-            playerId: parseInt(playerId),
-            direction
+            playerId: currentPlayer.id,
+            deltaX,
+            deltaY,
+            rotation
           })
         });
       }
-    }
-  }, [playerId, gameState.playerStates]);
-
-  useEffect(() => {
-    setupWebSocket();
-
-    return () => {
-      if (stompClientRef.current) {
-        stompClientRef.current.deactivate();
-      }
-    };
-  }, [setupWebSocket]);
-  // Input handlers
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      keysRef.current.add(e.key.toLowerCase());
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      keysRef.current.delete(e.key.toLowerCase());
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      mousePositionRef.current = { x: e.clientX, y: e.clientY };
-    };
-
-    const handleMouseClick = (e: MouseEvent) => {
-      if (e.button === 0) { // Left click
-        handleShoot();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('keyup', handleKeyUp);
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mousedown', handleMouseClick);
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('keyup', handleKeyUp);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mousedown', handleMouseClick);
-    };
-  }, [handleShoot]);
-
-  // Game loop for movement
-  useEffect(() => {
-    gameLoopRef.current = setInterval(() => {
-      sendMovement();
-    }, 1000 / 60); // 60 FPS
-
-    return () => {
-      if (gameLoopRef.current) {
-        clearInterval(gameLoopRef.current);
-      }
-    };
-  }, [sendMovement]);
-
-  // Canvas rendering
+    }, 16); // 60 FPS
+    
+    return () => clearInterval(moveLoop);
+  }, [currentPlayer, connected]);
+  
+  // Render game
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Clear canvas
-    ctx.fillStyle = '#2c3e50'; // Dark blue-gray background
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw grid pattern for the map
-    ctx.strokeStyle = '#34495e';
-    ctx.lineWidth = 1;
-    const gridSize = 50;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
     
-    for (let x = 0; x <= canvas.width; x += gridSize) {
+    // Clear screen
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    
+    // Draw grid
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < CANVAS_W; x += 50) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvas.height);
+      ctx.lineTo(x, CANVAS_H);
+      ctx.stroke();
+    }
+    for (let y = 0; y < CANVAS_H; y += 50) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(CANVAS_W, y);
       ctx.stroke();
     }
     
-    for (let y = 0; y <= canvas.height; y += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
-      ctx.stroke();
-    }
-
-    // Draw map boundaries
-    ctx.strokeStyle = '#e74c3c';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
     // Draw players
-    Object.entries(gameState.playerStates).forEach(([id, state]) => {
-      if (!state.isAlive) return;
-
-      // Scale position to canvas size
-      const x = (state.x / CANVAS_WIDTH) * canvas.width;
-      const y = (state.y / CANVAS_HEIGHT) * canvas.height;
+    Object.values(gameState.players).forEach(player => {
+      const screenX = (player.x / WORLD_W) * CANVAS_W;
+      const screenY = (player.y / WORLD_H) * CANVAS_H;
       
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(state.rotation);
+      // Player circle
+      ctx.fillStyle = player.alive ? '#ff4444' : '#666';
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, PLAYER_SIZE / 2, 0, Math.PI * 2);
+      ctx.fill();
       
-      // Draw player body
-      if (id === playerId) {
-        ctx.fillStyle = '#27ae60'; // Player is green
-      } else if (state.username?.startsWith('Bot')) {
-        ctx.fillStyle = '#f39c12'; // Bots are orange
-      } else {
-        ctx.fillStyle = '#3498db'; // Other players are blue
+      // Direction line
+      if (player.alive) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(screenX, screenY);
+        ctx.lineTo(
+          screenX + Math.cos(player.rotation) * 25,
+          screenY + Math.sin(player.rotation) * 25
+        );
+        ctx.stroke();
       }
       
-      ctx.fillRect(-PLAYER_SIZE/2, -PLAYER_SIZE/2, PLAYER_SIZE, PLAYER_SIZE);
+      // Health bar
+      const barW = 40;
+      const barH = 6;
+      const healthPct = player.health / 100;
       
-      // Draw weapon direction (gun barrel)
-      ctx.fillStyle = '#2c3e50';
-      ctx.fillRect(0, -PLAYER_SIZE/6, PLAYER_SIZE * 0.7, PLAYER_SIZE/3);
+      ctx.fillStyle = '#333';
+      ctx.fillRect(screenX - barW/2, screenY - 30, barW, barH);
       
-      ctx.restore();
+      ctx.fillStyle = healthPct > 0.3 ? '#4a4' : '#f44';
+      ctx.fillRect(screenX - barW/2, screenY - 30, barW * healthPct, barH);
       
-      // Draw player name
-      ctx.fillStyle = '#ffffff';
+      // Username
+      ctx.fillStyle = '#fff';
       ctx.font = '12px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(state.username || `Player ${id}`, x, y - PLAYER_SIZE - 5);
-      
-      // Draw health bar
-      const healthBarWidth = PLAYER_SIZE;
-      const healthBarHeight = 4;
-      const healthPercentage = state.health / 100;
-      
-      ctx.fillStyle = '#e74c3c';
-      ctx.fillRect(x - healthBarWidth/2, y + PLAYER_SIZE/2 + 5, healthBarWidth, healthBarHeight);
-      
-      ctx.fillStyle = '#27ae60';
-      ctx.fillRect(x - healthBarWidth/2, y + PLAYER_SIZE/2 + 5, healthBarWidth * healthPercentage, healthBarHeight);
+      ctx.fillText(player.username, screenX, screenY - 35);
     });
-
+    
     // Draw projectiles
-    Object.values(gameState.projectiles).forEach(projectile => {
-      // Scale position to canvas size
-      const x = (projectile.x / CANVAS_WIDTH) * canvas.width;
-      const y = (projectile.y / CANVAS_HEIGHT) * canvas.height;
+    Object.values(gameState.projectiles).forEach(proj => {
+      const screenX = (proj.x / WORLD_W) * CANVAS_W;
+      const screenY = (proj.y / WORLD_H) * CANVAS_H;
       
-      ctx.fillStyle = '#f1c40f'; // Yellow projectiles
+      ctx.fillStyle = '#ff6';
       ctx.beginPath();
-      ctx.arc(x, y, PROJECTILE_SIZE, 0, 2 * Math.PI);
+      ctx.arc(screenX, screenY, 3, 0, Math.PI * 2);
       ctx.fill();
     });
-
-  }, [gameState, playerId]);
-
-  const handleExitMatch = async () => {
-    setIsExiting(true);
-    try {
-      const playerId = localStorage.getItem('playerId');
-      if (playerId) {
-        // Get current player's active match
-        const currentMatch = await api.getCurrentPlayerMatch(parseInt(playerId));
-        if (currentMatch) {
-          // Leave the match
-          await api.leaveMatch(currentMatch.id, parseInt(playerId));
-        }
-      }
-    } catch (error) {
-      console.error('Error leaving match:', error);
-    } finally {
-      setIsExiting(false);
-      navigate('/menu');
-    }
+    
+  }, [gameState]);
+  
+  // Respawn
+  const respawn = () => {
+    if (!currentPlayer || !clientRef.current) return;
+    
+    clientRef.current.publish({
+      destination: '/app/game/respawn',
+      body: JSON.stringify({ playerId: currentPlayer.id })
+    });
   };
-
-  if (!playerId) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 40 }}>
-        <h2>Error: Not logged in</h2>
-        <button onClick={() => navigate('/login')}>Go to Login</button>
-      </div>
-    );
-  }
-
-  const currentPlayer = gameState.playerStates[playerId];
-
+  
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 20 }}>
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        width: '100%', 
-        maxWidth: CANVAS_WIDTH,
-        marginBottom: 10 
-      }}>
-        <h2 style={{ margin: 0, color: '#2c3e50' }}>GnGm Arena</h2>
-        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-          <div style={{ 
-            padding: '5px 10px', 
-            backgroundColor: isConnected ? '#27ae60' : '#e74c3c',
-            color: 'white',
-            borderRadius: 5,
-            fontSize: 12
-          }}>
-            {isConnected ? 'Connected' : 'Disconnected'}
-          </div>
-          {currentPlayer && (
-            <div style={{ 
-              display: 'flex', 
-              gap: 15,
-              color: '#2c3e50',
-              fontSize: 14
-            }}>
-              <span>Health: {Math.round(currentPlayer.health)}</span>
-              <span>Weapon: {currentPlayer.currentWeapon?.name || 'None'}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <canvas 
-        ref={canvasRef} 
-        width={CANVAS_WIDTH} 
-        height={CANVAS_HEIGHT} 
-        style={{ 
-          border: '2px solid #2c3e50', 
-          background: '#34495e',
-          cursor: 'crosshair'
-        }} 
-      />
-
-      <div style={{ marginTop: 15, display: 'flex', gap: 20, alignItems: 'center' }}>
-        <div style={{ 
-          fontSize: 12, 
-          color: '#7f8c8d',
-          textAlign: 'center'
-        }}>
-          <div>Controls: WASD to move, Mouse to aim, Click to shoot</div>
-          <div>Players: {Object.keys(gameState.playerStates).length} online</div>
-        </div>
+    <div style={{ textAlign: 'center', padding: '20px' }}>
+      <h2>Test Area</h2>
+      
+      <div style={{ marginBottom: '10px' }}>
+        <span style={{ color: connected ? '#4a4' : '#f44', fontWeight: 'bold' }}>
+          {connected ? '🟢 ONLINE' : '🔴 OFFLINE'}
+        </span>
         
-        <button 
-          onClick={handleExitMatch} 
-          disabled={isExiting}
-          style={{ 
-            padding: '10px 20px',
-            backgroundColor: isExiting ? '#95a5a6' : '#e74c3c',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: isExiting ? 'not-allowed' : 'pointer',
-            fontSize: 14
-          }}
-        >
-          {isExiting ? 'Exiting...' : 'Exit Match'}
-        </button>
+        {currentPlayer && (
+          <span style={{ marginLeft: '20px', color: '#ccc' }}>
+            {currentPlayer.username} | HP: {currentPlayer.health} | 
+            {currentPlayer.alive ? ' 🟢 ALIVE' : ' 💀 DEAD'}
+          </span>
+        )}
+      </div>
+      
+      <canvas
+        ref={canvasRef}
+        width={CANVAS_W}
+        height={CANVAS_H}
+        style={{ 
+          border: '2px solid #333',
+          backgroundColor: '#1a1a1a',
+          cursor: 'crosshair'
+        }}
+        onMouseMove={handleMouseMove}
+        onClick={handleClick}
+      />
+      
+      <div style={{ marginTop: '10px', color: '#ccc' }}>
+        <p><strong>Controls:</strong> WASD = Move | Mouse = Aim | Click = Shoot</p>
+        
+        {currentPlayer && !currentPlayer.alive && (
+          <button 
+            onClick={respawn}
+            style={{
+              padding: '10px 20px',
+              fontSize: '16px',
+              backgroundColor: '#f44',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              marginTop: '10px'
+            }}
+          >
+            🔄 RESPAWN
+          </button>
+        )}
+        
+        <div style={{ marginTop: '10px', fontSize: '14px', opacity: 0.7 }}>
+          Players: {Object.keys(gameState.players).length} | 
+          Bullets: {Object.keys(gameState.projectiles).length}
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default Game;

@@ -25,11 +25,27 @@ public class GameBroadcastScheduler {
     public void broadcastGameState() {
         gameEngineService.updateProjectiles();
         gameEngineService.cleanupDeadPlayers();
-        messagingTemplate.convertAndSend("/topic/game/state", new GameWebSocketController.GameStateMessage(
-            gameEngineService.getPlayerStates(),
-            gameEngineService.getActiveProjectiles()
-        ));
+        
+        // Log current player count every few seconds to reduce spam
+        if (System.currentTimeMillis() - lastLogTime > 3000) { // Log every 3 seconds
+            var players = gameEngineService.getPlayerStates();
+            System.out.println("=== GAME STATE DEBUG ===");
+            System.out.println("Current player count: " + players.size());
+            players.forEach((playerId, player) -> {
+                System.out.println("Player " + playerId + ": " + player.username + 
+                    " at (" + player.x + ", " + player.y + ") health=" + player.health + 
+                    " alive=" + player.alive);
+            });
+            System.out.println("========================");
+            lastLogTime = System.currentTimeMillis();
+        }
+        
+        // Create GameState and broadcast
+        GameEngineService.GameState gameState = gameEngineService.getGameState();
+        messagingTemplate.convertAndSend("/topic/game/state", gameState);
     }
+    
+    private long lastLogTime = 0;
 
     // Clean up inactive matches every 10 minutes
     @Scheduled(fixedRate = 600000) // 10 minutes
