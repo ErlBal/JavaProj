@@ -92,15 +92,16 @@ const Game: React.FC = () => {
       client.deactivate();
     };
   }, []);
-  
-  // Keyboard input
+    // Keyboard input
   useEffect(() => {
     const keyDown = (e: KeyboardEvent) => {
       keysPressed.current[e.key.toLowerCase()] = true;
+      console.log('Key pressed:', e.key.toLowerCase());
     };
     
     const keyUp = (e: KeyboardEvent) => {
       keysPressed.current[e.key.toLowerCase()] = false;
+      console.log('Key released:', e.key.toLowerCase());
     };
     
     window.addEventListener('keydown', keyDown);
@@ -147,8 +148,7 @@ const Game: React.FC = () => {
     
     console.log('💥 Shooting!');
   };
-  
-  // Movement loop
+    // Movement loop
   useEffect(() => {
     const moveLoop = setInterval(() => {
       if (!currentPlayer || !clientRef.current || !connected) return;
@@ -162,6 +162,11 @@ const Game: React.FC = () => {
       if (keys['s']) deltaY += 5;
       if (keys['a']) deltaX -= 5;
       if (keys['d']) deltaX += 5;
+      
+      // Debug movement
+      if (deltaX !== 0 || deltaY !== 0) {
+        console.log('Movement detected:', { deltaX, deltaY, keys: Object.keys(keys).filter(k => keys[k]) });
+      }
       
       // Calculate rotation towards mouse
       const playerScreenX = (currentPlayer.x / WORLD_W) * CANVAS_W;
