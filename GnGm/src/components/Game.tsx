@@ -34,10 +34,20 @@ const Game: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>({ players: {}, projectiles: {} });
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [connected, setConnected] = useState(false);
-  
-  // Input handling
+    // Input handling
   const keysPressed = useRef<{ [key: string]: boolean }>({});
   const mousePos = useRef({ x: 0, y: 0 });
+  const currentPlayerRef = useRef<Player | null>(null);
+  const connectedRef = useRef<boolean>(false);
+  
+  // Update refs when state changes
+  useEffect(() => {
+    currentPlayerRef.current = currentPlayer;
+  }, [currentPlayer]);
+  
+  useEffect(() => {
+    connectedRef.current = connected;
+  }, [connected]);
   
   // Game constants
   const WORLD_W = 1600;
@@ -51,16 +61,19 @@ const Game: React.FC = () => {
       onConnect: () => {
         console.log('✅ Connected to game server');
         setConnected(true);
-        
-        // Listen for game updates
+          // Listen for game updates
         client.subscribe('/topic/game/state', (message) => {
           const state: GameState = JSON.parse(message.body);
           setGameState(state);
           
           // Update current player
           const playerId = parseInt(localStorage.getItem('playerId') || '1');
+          console.log('🔍 Looking for player ID:', playerId, 'in state players:', Object.keys(state.players));
           if (state.players[playerId]) {
+            console.log('✅ Found current player:', state.players[playerId]);
             setCurrentPlayer(state.players[playerId]);
+          } else {
+            console.log('❌ Current player not found in game state');
           }
         });
         
@@ -87,21 +100,49 @@ const Game: React.FC = () => {
     
     client.activate();
     clientRef.current = client;
-    
-    return () => {
+      return () => {
       client.deactivate();
     };
   }, []);
-    // Keyboard input
+  
+  // Cleanup on page refresh or component unmount
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (currentPlayer && clientRef.current && connected) {
+        // Send a leave message to remove the player from the server
+        clientRef.current.publish({
+          destination: '/app/game/leave',
+          body: JSON.stringify({ playerId: currentPlayer.id })
+        });
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Also cleanup when component unmounts
+      handleBeforeUnload();
+    };
+  }, [currentPlayer, connected]);
+  // Keyboard input
   useEffect(() => {
     const keyDown = (e: KeyboardEvent) => {
-      keysPressed.current[e.key.toLowerCase()] = true;
-      console.log('Key pressed:', e.key.toLowerCase());
+      const key = e.key.toLowerCase();
+      if (['w', 'a', 's', 'd'].includes(key)) {
+        console.log('⌨️ Key pressed:', key);
+        keysPressed.current[key] = true;
+        console.log('🔑 Keys after press:', {...keysPressed.current});
+      }
     };
     
     const keyUp = (e: KeyboardEvent) => {
-      keysPressed.current[e.key.toLowerCase()] = false;
-      console.log('Key released:', e.key.toLowerCase());
+      const key = e.key.toLowerCase();
+      if (['w', 'a', 's', 'd'].includes(key)) {
+        console.log('⌨️ Key released:', key);
+        keysPressed.current[key] = false;
+        console.log('🔑 Keys after release:', {...keysPressed.current});
+      }
     };
     
     window.addEventListener('keydown', keyDown);
@@ -149,48 +190,65 @@ const Game: React.FC = () => {
     console.log('💥 Shooting!');
   };
     // Movement loop
-  useEffect(() => {
-    const moveLoop = setInterval(() => {
-      if (!currentPlayer || !clientRef.current || !connected) return;
+  useEffect(() => {    const moveLoop = setInterval(() => {
+      // Use refs to get current values
+      const player = currentPlayerRef.current;
+      const isConnected = connectedRef.current;
+      const client = clientRef.current;
+      
+      // Debug: Check movement loop conditions
+      if (!player) {
+        console.log('❌ No current player');
+        return;
+      }
+      if (!client) {
+        console.log('❌ No WebSocket client');
+        return;
+      }
+      if (!isConnected) {
+        console.log('❌ Not connected');
+        return;
+      }
+      
+      console.log('✅ Movement loop running for player:', player.id);
       
       const keys = keysPressed.current;
       let deltaX = 0;
-      let deltaY = 0;
-      
-      // WASD movement
+      let deltaY = 0;      // WASD movement
       if (keys['w']) deltaY -= 5;
       if (keys['s']) deltaY += 5;
       if (keys['a']) deltaX -= 5;
       if (keys['d']) deltaX += 5;
       
-      // Debug movement
-      if (deltaX !== 0 || deltaY !== 0) {
-        console.log('Movement detected:', { deltaX, deltaY, keys: Object.keys(keys).filter(k => keys[k]) });
-      }
+      // Debug: Always log key states and movement
+      const activeKeys = Object.keys(keys).filter(k => keys[k]);
+      console.log('🔍 Keys state:', { w: keys['w'], a: keys['a'], s: keys['s'], d: keys['d'], activeKeys, deltaX, deltaY });
       
-      // Calculate rotation towards mouse
-      const playerScreenX = (currentPlayer.x / WORLD_W) * CANVAS_W;
-      const playerScreenY = (currentPlayer.y / WORLD_H) * CANVAS_H;
+      // Debug: Log when movement is detected
+      if (deltaX !== 0 || deltaY !== 0) {
+        console.log('🎮 Moving:', { deltaX, deltaY, activeKeys });
+      }
+        // Calculate rotation towards mouse
+      const playerScreenX = (player.x / WORLD_W) * CANVAS_W;
+      const playerScreenY = (player.y / WORLD_H) * CANVAS_H;
       const dx = mousePos.current.x - playerScreenX;
       const dy = mousePos.current.y - playerScreenY;
-      const rotation = Math.atan2(dy, dx);
-      
-      // Send movement
+      const rotation = Math.atan2(dy, dx);      // Send movement
       if (deltaX !== 0 || deltaY !== 0) {
-        clientRef.current.publish({
+        console.log('🚶 Sending movement:', { playerId: player.id, deltaX, deltaY, rotation });
+        client.publish({
           destination: '/app/game/move',
           body: JSON.stringify({
-            playerId: currentPlayer.id,
+            playerId: player.id,
             deltaX,
             deltaY,
             rotation
           })
         });
       }
-    }, 16); // 60 FPS
-    
-    return () => clearInterval(moveLoop);
-  }, [currentPlayer, connected]);
+    }, 33); // 30 FPS for good balance between smooth movement and network load
+      return () => clearInterval(moveLoop);
+  }, []); // Remove dependencies to prevent constant recreation
   
   // Render game
   useEffect(() => {
@@ -303,14 +361,16 @@ const Game: React.FC = () => {
       <canvas
         ref={canvasRef}
         width={CANVAS_W}
-        height={CANVAS_H}
-        style={{ 
+        height={CANVAS_H}        style={{ 
           border: '2px solid #333',
           backgroundColor: '#1a1a1a',
-          cursor: 'crosshair'
+          cursor: 'crosshair',
+          outline: 'none'
         }}
+        tabIndex={0}
         onMouseMove={handleMouseMove}
         onClick={handleClick}
+        onFocus={() => console.log('🎯 Canvas focused - keyboard ready!')}
       />
       
       <div style={{ marginTop: '10px', color: '#ccc' }}>
