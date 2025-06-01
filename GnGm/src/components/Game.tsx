@@ -124,24 +124,19 @@ const Game: React.FC = () => {
       // Also cleanup when component unmounts
       handleBeforeUnload();
     };
-  }, [currentPlayer, connected]);
-  // Keyboard input
+  }, [currentPlayer, connected]);  // Keyboard input
   useEffect(() => {
     const keyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       if (['w', 'a', 's', 'd'].includes(key)) {
-        console.log('⌨️ Key pressed:', key);
         keysPressed.current[key] = true;
-        console.log('🔑 Keys after press:', {...keysPressed.current});
       }
     };
     
     const keyUp = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       if (['w', 'a', 's', 'd'].includes(key)) {
-        console.log('⌨️ Key released:', key);
         keysPressed.current[key] = false;
-        console.log('🔑 Keys after release:', {...keysPressed.current});
       }
     };
     
@@ -204,29 +199,24 @@ const Game: React.FC = () => {
       if (!client) {
         console.log('❌ No WebSocket client');
         return;
-      }
-      if (!isConnected) {
+      }      if (!isConnected) {
         console.log('❌ Not connected');
         return;
       }
       
-      console.log('✅ Movement loop running for player:', player.id);
-      
       const keys = keysPressed.current;
       let deltaX = 0;
-      let deltaY = 0;      // WASD movement
+      let deltaY = 0;
+
+      // WASD movement
       if (keys['w']) deltaY -= 5;
       if (keys['s']) deltaY += 5;
       if (keys['a']) deltaX -= 5;
       if (keys['d']) deltaX += 5;
       
-      // Debug: Always log key states and movement
-      const activeKeys = Object.keys(keys).filter(k => keys[k]);
-      console.log('🔍 Keys state:', { w: keys['w'], a: keys['a'], s: keys['s'], d: keys['d'], activeKeys, deltaX, deltaY });
-      
       // Debug: Log when movement is detected
       if (deltaX !== 0 || deltaY !== 0) {
-        console.log('🎮 Moving:', { deltaX, deltaY, activeKeys });
+        console.log('🎮 Moving:', { deltaX, deltaY });
       }
         // Calculate rotation towards mouse
       const playerScreenX = (player.x / WORLD_W) * CANVAS_W;
@@ -243,10 +233,9 @@ const Game: React.FC = () => {
             deltaX,
             deltaY,
             rotation
-          })
-        });
+          })        });
       }
-    }, 33); // 30 FPS for good balance between smooth movement and network load
+    }, 16); // 60 FPS for smoother movement
       return () => clearInterval(moveLoop);
   }, []); // Remove dependencies to prevent constant recreation
   
