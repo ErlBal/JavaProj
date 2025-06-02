@@ -109,6 +109,8 @@ public class GameEngineService {
             }
             // Remove finished matches
             for (Long id : matchesToRemove) {
+                // Broadcast winner/gameOver state one last time before removal
+                broadcastGameState(id);
                 matches.remove(id);
             }
         }, 0, 16, TimeUnit.MILLISECONDS);

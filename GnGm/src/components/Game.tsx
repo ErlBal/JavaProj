@@ -3,6 +3,7 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { api } from '../services/api';
 
 // Simple types
 interface Player {
@@ -60,6 +61,10 @@ const Game: React.FC = () => {
   const [winnerName, setWinnerName] = useState<string | null>(null);
   const navigate = useNavigate();
   
+  // Add refs to cache winner/gameOver
+  const lastWinnerName = useRef<string | null>(null);
+  const lastGameOver = useRef(false);
+  
   // Update refs when state changes
   useEffect(() => {
     currentPlayerRef.current = currentPlayer;
@@ -98,8 +103,14 @@ const Game: React.FC = () => {
             console.log('❌ Current player not found in game state');
           }
           
-          if ('gameOver' in state) setGameOver(state.gameOver);
-          if ('winnerName' in state) setWinnerName(state.winnerName);
+          if ('gameOver' in state) {
+            setGameOver(state.gameOver);
+            lastGameOver.current = state.gameOver;
+          }
+          if ('winnerName' in state) {
+            setWinnerName(state.winnerName);
+            lastWinnerName.current = state.winnerName;
+          }
           if (state.gameOver) {
             setTimeout(() => {
               navigate('/menu');
@@ -217,13 +228,10 @@ const Game: React.FC = () => {
     // Movement loop
   useEffect(() => {
     const moveLoop = setInterval(() => {
-      console.log('[MoveLoop] Tick');
       const player = currentPlayerRef.current;
       const isConnected = connectedRef.current;
       const client = clientRef.current;
       const canvas = canvasRef.current;
-      console.log('[MoveLoop] Player:', player);
-      console.log('[MoveLoop] Canvas:', canvas);
       if (!player || !client || !isConnected || !canvas) return;
       const keys = keysPressed.current;
       let vx = 0;
@@ -239,7 +247,6 @@ const Game: React.FC = () => {
       const dy = mouseWorldY - player.y;
       const rotation = Math.atan2(dy, dx);
       const newRotation = rotation;
-      console.log('[MoveLoop] Sending movement:', { matchId, playerId: player.id, vx, vy, rotation: newRotation });
       client.publish({
         destination: '/app/game/move',
         body: JSON.stringify({ matchId, playerId: player.id, vx, vy, rotation: newRotation })
@@ -389,6 +396,22 @@ const Game: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
+  // Add a function to leave the match
+  const handleExitMatch = async () => {
+    try {
+      const playerId = localStorage.getItem('playerId');
+      const matchId = localStorage.getItem('matchId');
+      if (playerId && matchId) {
+        await api.leaveMatch(Number(matchId), Number(playerId));
+        localStorage.removeItem('matchId');
+      }
+    } catch (e) {
+      // Ignore errors
+    } finally {
+      navigate('/menu');
+    }
+  };
+  
   return (
     <>
       <style>{`
@@ -437,6 +460,13 @@ const Game: React.FC = () => {
         <span style={{ color: connected ? '#4a4' : '#f44', fontWeight: 'bold' }}>
           {connected ? '🟢 ONLINE' : '🔴 OFFLINE'}
         </span>
+        <button
+          className="hud-btn"
+          style={{ marginLeft: 16, fontSize: 14, padding: '4px 12px', verticalAlign: 'middle' }}
+          onClick={handleExitMatch}
+        >
+          Exit Match
+        </button>
       </div>
       {/* Top Right: Player Info */}
       <div className="hud-corner hud-top-right">
@@ -494,7 +524,7 @@ const Game: React.FC = () => {
         onClick={handleClick}
         onFocus={() => console.log('🎯 Canvas focused - keyboard ready!')}
       />
-      {gameOver && winnerName && (
+      {(gameOver || lastGameOver.current || winnerName || lastWinnerName.current) && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -510,11 +540,11 @@ const Game: React.FC = () => {
           fontSize: '3rem',
           zIndex: 1000
         }}>
-          <div style={{ marginBottom: 32 }}>Winner: {winnerName}</div>
+          <div style={{ marginBottom: 32 }}>Winner: {winnerName || lastWinnerName.current}</div>
           <button
             className="hud-btn"
             style={{ fontSize: '2rem', padding: '16px 32px', marginTop: 16 }}
-            onClick={() => navigate('/menu')}
+            onClick={handleExitMatch}
           >
             Exit to Menu
           </button>

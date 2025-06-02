@@ -41,6 +41,7 @@ public class SecurityConfig {
                 .requestMatchers("/ws/**", "/ws", "/", "/index.html", "/js/**", "/css/**", "/favicon.ico").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/map/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/matches").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
