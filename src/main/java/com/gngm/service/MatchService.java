@@ -132,4 +132,20 @@ public class MatchService {
                 .filter(Match::getIsActive)
                 .findFirst();
     }
+
+    public Match save(Match match) {
+        return matchRepository.save(match);
+    }
+
+    public Optional<Match> findByMatchName(String matchName) {
+        return matchRepository.findByMatchName(matchName);
+    }
+
+    public List<Match> findByMatchNameContaining(String search) {
+        return matchRepository.findByMatchNameContaining(search);
+    }
+
+    public List<Match> findAll() {
+        return matchRepository.findAll();
+    }
 }

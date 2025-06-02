@@ -9,12 +9,13 @@ export default function Lobby() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
+  const [search, setSearch] = useState('');
 
   // Check if we were redirected here after creating a match
   const createdMatchId = location.state?.matchId;
 
   useEffect(() => {
-    fetchActiveMatches();
+    fetchMatches();
     fetchCurrentPlayerMatch();
   }, []);
 
@@ -30,11 +31,11 @@ export default function Lobby() {
     }
   };
 
-  const fetchActiveMatches = async () => {
+  const fetchMatches = async (searchTerm?: string) => {
     try {
       setLoading(true);
-      const activeMatches = await api.getActiveMatches();
-      setMatches(activeMatches);
+      const result = await api.listMatches(searchTerm);
+      setMatches(result);
       setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch matches');
@@ -42,16 +43,21 @@ export default function Lobby() {
       setLoading(false);
     }
   };
-  const handleJoinMatch = async (matchId: number) => {
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchMatches(search);
+  };
+
+  const handleJoinMatch = async (matchName: string) => {
     try {
       const playerId = localStorage.getItem('playerId');
       if (!playerId) {
         setError('Player ID not found. Please log in again.');
         return;
       }
-
-      await api.joinMatch(matchId, parseInt(playerId));
-      navigate('/game', { state: { matchId } });
+      await api.joinMatch(matchName, parseInt(playerId));
+      navigate('/game', { state: { matchName } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join match');
     }
@@ -65,7 +71,7 @@ export default function Lobby() {
         if (playerId) {
           await api.leaveMatch(currentMatch.id, parseInt(playerId));
           setCurrentMatch(null);
-          await fetchActiveMatches();
+          await fetchMatches();
         }
       } catch (error) {
         console.error('Error leaving match:', error);
@@ -133,7 +139,7 @@ export default function Lobby() {
         </button>
         
         <button 
-          onClick={fetchActiveMatches}
+          onClick={() => fetchMatches()}
           style={{
             padding: '12px 24px',
             backgroundColor: '#5352ed',
@@ -178,6 +184,18 @@ export default function Lobby() {
       <div style={{ width: '100%', maxWidth: '800px' }}>
         <h3 style={{ color: '#ff4757', marginBottom: '20px' }}>Active Matches</h3>
         
+        {/* Search Field */}
+        <form onSubmit={handleSearch} style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by match name (case-sensitive)"
+            style={{ flex: 1, padding: '10px', borderRadius: '5px', border: '1px solid #ff4757', fontSize: '16px' }}
+          />
+          <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#ff4757', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>Search</button>
+        </form>
+        
         {loading ? (
           <div style={{ color: 'white', textAlign: 'center', padding: '20px' }}>
             Loading matches...
@@ -209,7 +227,7 @@ export default function Lobby() {
               >
                 <div>
                   <h4 style={{ color: '#ff4757', margin: '0 0 5px 0' }}>
-                    {match.mapName}
+                    {match.matchName}
                   </h4>
                   <p style={{ color: '#a4b0be', margin: '0 0 5px 0' }}>
                     Players: {match.players?.length || 0}/{match.maxPlayers}
@@ -220,7 +238,7 @@ export default function Lobby() {
                 </div>
                 
                 <button
-                  onClick={() => handleJoinMatch(match.id)}
+                  onClick={() => handleJoinMatch(match.matchName)}
                   disabled={match.players?.length >= match.maxPlayers}
                   style={{
                     padding: '10px 20px',

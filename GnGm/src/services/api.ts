@@ -12,7 +12,7 @@ export interface LoginResponse {
 
 export interface Match {
   id: number;
-  mapName: string;
+  matchName: string;
   maxPlayers: number;
   isActive: boolean;
   createdAt: string;
@@ -77,55 +77,54 @@ export const api = {
     return token ? { 'Authorization': `Bearer ${token}` } : {};
   },
   // Match-related API calls
-  async createMatch(mapName: string, maxPlayers: number): Promise<Match> {
-    const playerId = localStorage.getItem('playerId');
-    if (!playerId) {
-      throw new Error('Player ID not found. Please log in again.');
-    }
-
-    const response = await fetch(`${API_URL}/matches?mapName=${encodeURIComponent(mapName)}&maxPlayers=${maxPlayers}&playerId=${playerId}`, {
+  async createMatch(matchName: string, maxPlayers: number): Promise<Match> {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...this.getAuthHeader(),
+    };
+    console.log('[API] POST /matches', { headers });
+    const response = await fetch(`${API_URL}/matches`, {
       method: 'POST',
-      headers: {
-        ...this.getAuthHeader(),
-      },
+      headers,
+      body: JSON.stringify({ matchName, maxPlayers })
     });
-
     if (!response.ok) {
       throw new Error('Failed to create match');
     }
-
     return response.json();
   },
 
-  async getActiveMatches(): Promise<Match[]> {
-    const response = await fetch(`${API_URL}/matches/active`, {
+  async listMatches(search?: string): Promise<Match[]> {
+    const url = search ? `${API_URL}/matches?search=${encodeURIComponent(search)}` : `${API_URL}/matches`;
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         ...this.getAuthHeader(),
       },
     });
-
     if (!response.ok) {
-      throw new Error('Failed to get active matches');
+      throw new Error('Failed to list matches');
     }
-
     return response.json();
   },
 
-  async joinMatch(matchId: number, playerId: number): Promise<Match> {
-    const response = await fetch(`${API_URL}/matches/${matchId}/join?playerId=${playerId}`, {
+  async joinMatch(matchName: string, playerId: number): Promise<Match> {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...this.getAuthHeader(),
+    };
+    console.log('[API] POST /matches/join', { headers });
+    const response = await fetch(`${API_URL}/matches/join`, {
       method: 'POST',
-      headers: {
-        ...this.getAuthHeader(),
-      },
+      headers,
+      body: JSON.stringify({ matchName, playerId })
     });
-
     if (!response.ok) {
       throw new Error('Failed to join match');
     }
-
     return response.json();
   },
+
   async getCurrentPlayerMatch(playerId: number): Promise<Match | null> {
     const response = await fetch(`${API_URL}/matches/player/${playerId}/current`, {
       method: 'GET',
@@ -160,7 +159,7 @@ export const api = {
     return response.json();
   },
 
-  async getMatchDetails(matchId: number): Promise<{ mapName: string }> {
+  async getMatchDetails(matchId: number): Promise<{ matchName: string }> {
     const response = await fetch(`${API_URL}/matches/${matchId}`, {
       method: 'GET',
       headers: {

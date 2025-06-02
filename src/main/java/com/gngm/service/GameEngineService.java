@@ -50,7 +50,7 @@ public class GameEngineService {
                             double newX = Math.max(20, Math.min(MAP_WIDTH - 20, player.x + player.vx));
                             double newY = Math.max(20, Math.min(MAP_HEIGHT - 20, player.y + player.vy));
                             // No wall collision check
-                            System.out.println("Moving player " + player.id + " from (" + player.x + ", " + player.y + ") to (" + newX + ", " + newY + ") with vx=" + player.vx + ", vy=" + player.vy);
+                            // System.out.println("Moving player " + player.id + " from (" + player.x + ", " + player.y + ") to (" + newX + ", " + newY + ") with vx=" + player.vx + ", vy=" + player.vy);
                             player.x = newX;
                             player.y = newY;
                         }

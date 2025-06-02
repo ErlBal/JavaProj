@@ -7,9 +7,13 @@ import com.gngm.service.MatchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.gngm.dto.MatchCreateRequest;
+import com.gngm.dto.MatchJoinRequest;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api/matches")
@@ -22,37 +26,44 @@ public class MatchController {
         this.matchService = matchService;
     }
 
-    @PostMapping
-    public ResponseEntity<MatchResponse> createMatch(
-            @RequestParam String mapName,
-            @RequestParam int maxPlayers,
-            @RequestParam Long playerId) {
-        Match match = matchService.createMatch(mapName, maxPlayers, playerId);
-        MatchResponse response = new MatchResponse(
-                match.getId(),
-                match.getMapName(),
-                match.getPlayers().stream().map(Player::getUsername).toList(),
-                match.getIsActive() ? "ACTIVE" : "INACTIVE",
-                match.getWinner() != null ? match.getWinner().getUsername() : null
-        );
-        return ResponseEntity.ok(response);
+    @PostMapping("")
+    public ResponseEntity<Match> createMatch(@RequestBody MatchCreateRequest request) {
+        // Check if matchName already exists (case-sensitive)
+        if (matchService.findByMatchName(request.getMatchName()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        }
+        Match match = new Match();
+        match.setMatchName(request.getMatchName());
+        match.setMaxPlayers(request.getMaxPlayers() != null ? request.getMaxPlayers() : 4);
+        match.setStartTime(LocalDateTime.now());
+        match.setIsActive(true);
+        matchService.save(match);
+        return ResponseEntity.ok(match);
     }
 
-    @PostMapping("/{matchId}/join")
-    public ResponseEntity<Match> joinMatch(
-            @PathVariable Long matchId,
-            @RequestParam Long playerId) {
-        return ResponseEntity.ok(matchService.joinMatch(matchId, playerId));
+    @PostMapping("/matches/join")
+    public ResponseEntity<Match> joinMatch(@RequestBody MatchJoinRequest request) {
+        Optional<Match> matchOpt = matchService.findByMatchName(request.getMatchName());
+        if (matchOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+        Match match = matchOpt.get();
+        // ... add player to match logic ...
+        return ResponseEntity.ok(match);
     }
 
-    @PostMapping("/{matchId}/end")
-    public ResponseEntity<Match> endMatch(
-            @PathVariable Long matchId,
-            @RequestParam Long winnerId) {
-        return ResponseEntity.ok(matchService.endMatch(matchId, winnerId));
+    @GetMapping("/matches")
+    public ResponseEntity<List<Match>> listMatches(@RequestParam(required = false) String search) {
+        List<Match> matches;
+        if (search != null && !search.isEmpty()) {
+            matches = matchService.findByMatchNameContaining(search);
+        } else {
+            matches = matchService.findAll();
+        }
+        return ResponseEntity.ok(matches);
     }
 
-    @GetMapping("/active")
+    @PostMapping("/active")
     public ResponseEntity<List<Match>> getActiveMatches() {
         return ResponseEntity.ok(matchService.getActiveMatches());
     }

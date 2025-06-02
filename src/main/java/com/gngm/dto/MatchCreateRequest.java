@@ -6,4 +6,6 @@ import lombok.Data;
 public class MatchCreateRequest {
     private Long mapId;
     private Long playerId;
+    private String matchName;
+    private Integer maxPlayers;
 } 

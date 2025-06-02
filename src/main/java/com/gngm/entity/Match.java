@@ -37,8 +37,8 @@ public class Match {
     @Column
     private LocalDateTime endTime;
 
-    @Column(nullable = false)
-    private String mapName;
+    @Column(nullable = false, unique = true)
+    private String matchName;
 
     @Column(nullable = false)
     private Integer maxPlayers = 4;
@@ -46,8 +46,8 @@ public class Match {
     @Column(nullable = false)
     private Boolean isActive = true;
 
-    public Match(String mapName, Integer maxPlayers, LocalDateTime startTime) {
-        this.mapName = mapName;
+    public Match(String matchName, Integer maxPlayers, LocalDateTime startTime) {
+        this.matchName = matchName;
         this.maxPlayers = maxPlayers;
         this.startTime = startTime;
         this.isActive = true;

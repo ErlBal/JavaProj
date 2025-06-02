@@ -24,7 +24,6 @@ com\gngm\repository\MapRepository.class
 com\gngm\entity\Match.class
 com\gngm\service\MatchService.class
 com\gngm\dto\AuthenticationRequest.class
-com\gngm\controller\MatchController.class
 com\gngm\entity\BotPlayer.class
 com\gngm\entity\Player.class
 com\gngm\dto\AuthenticationRequest$AuthenticationRequestBuilder.class

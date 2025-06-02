@@ -3,6 +3,7 @@ package com.gngm.security;
 import com.gngm.entity.Player;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -16,7 +17,7 @@ public class PlayerUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.emptyList(); // No roles for now
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + player.getRole().name()));
     }
 
     @Override

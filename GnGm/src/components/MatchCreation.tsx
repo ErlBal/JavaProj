@@ -8,7 +8,7 @@ const AVAILABLE_MAPS = [
 ];
 
 export default function MatchCreation() {
-  const [mapName, setMapName] = useState('Map1');
+  const [matchName, setMatchName] = useState('');
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
@@ -19,11 +19,11 @@ export default function MatchCreation() {
     setError('');
 
     try {
-      const match = await api.createMatch(mapName, maxPlayers);
+      const match = await api.createMatch(matchName, maxPlayers);
       console.log('Match created:', match);
       
       // Navigate directly to the game since player is automatically joined
-      navigate('/game', { state: { matchId: match.id, mapName } });
+      navigate('/game', { state: { matchId: match.id, matchName } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create match');
     } finally {
@@ -44,27 +44,26 @@ export default function MatchCreation() {
       <h2 style={{ color: '#ff4757', marginBottom: '30px' }}>Create New Match</h2>
       
       <form onSubmit={handleCreateMatch} style={{ width: '100%' }}>
-        {/* Map Selection */}
+        {/* Match Name Field */}
         <div style={{ marginBottom: '20px' }}>
-          <label htmlFor="map" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#ff4757' }}>Select Map:</label>
-          <select
-            id="map"
-            value={mapName}
-            onChange={(e) => setMapName(e.target.value)}
-            style={{ 
-              width: '100%', 
-              padding: '10px', 
-              borderRadius: '5px', 
+          <label htmlFor="matchName" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#ff4757' }}>Match Name:</label>
+          <input
+            id="matchName"
+            type="text"
+            value={matchName}
+            onChange={(e) => setMatchName(e.target.value)}
+            required
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '5px',
               border: '2px solid #ff4757',
               backgroundColor: '#2f3542',
               color: 'white',
-              fontSize: '16px' 
+              fontSize: '16px'
             }}
-          >
-            {AVAILABLE_MAPS.map(map => (
-              <option key={map} value={map}>{map}</option>
-            ))}
-          </select>
+            placeholder="Enter a unique match name"
+          />
         </div>
 
         {/* Player Count Selection */}
@@ -178,7 +177,7 @@ export default function MatchCreation() {
         width: '100%'
       }}>
         <h4 style={{ color: '#ff4757', marginBottom: '10px' }}>Match Preview:</h4>
-        <p style={{ color: 'white', margin: '5px 0' }}>Map: <strong>{mapName}</strong></p>
+        <p style={{ color: 'white', margin: '5px 0' }}>Name: <strong>{matchName || '(not set)'}</strong></p>
         <p style={{ color: 'white', margin: '5px 0' }}>Max Players: <strong>{maxPlayers}</strong></p>
       </div>
     </div>
