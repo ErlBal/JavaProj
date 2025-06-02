@@ -42,133 +42,72 @@ export default function MainMenu() {
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      marginTop: 100,
-      gap: '15px'
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      background: '#232323',
+      gap: '18px',
     }}>
-      <h2 style={{ color: '#ff4757', marginBottom: '20px' }}>GnGm - Main Menu</h2>
-      
+      <h2 style={{ color: '#a12a2a', marginBottom: '24px', fontWeight: 900, letterSpacing: 2, textTransform: 'uppercase' }}>Menu</h2>
       {/* Current Match Status */}
       {!loading && currentMatch && (
         <div style={{
-          backgroundColor: '#ff4757',
-          color: 'white',
+          backgroundColor: '#a12a2a',
+          color: '#f4f4f4',
           padding: '10px 20px',
-          borderRadius: '5px',
+          borderRadius: '6px',
           marginBottom: '10px',
-          textAlign: 'center'
+          textAlign: 'center',
+          fontWeight: 700,
+          letterSpacing: 1
         }}>
           Currently in match: {currentMatch.mapName}
         </div>
       )}
-
-      <button 
+      <button
         onClick={() => navigate('/create-match')}
-        style={{
-          padding: '12px 30px',
-          backgroundColor: '#ff4757',
-          color: 'white',
-          border: 'none',
-          borderRadius: '5px',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          minWidth: '200px',
-          transition: 'background-color 0.3s'
-        }}
-        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#ff3838'}
-        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#ff4757'}
+        style={{ minWidth: '220px' }}
       >
         Create Match
       </button>
-      
-      <button 
+      <button
         onClick={() => navigate('/lobby')}
-        style={{
-          padding: '12px 30px',
-          backgroundColor: '#5352ed',
-          color: 'white',
-          border: 'none',
-          borderRadius: '5px',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          minWidth: '200px',
-          transition: 'background-color 0.3s'
-        }}
-        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3742fa'}
-        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#5352ed'}
+        style={{ minWidth: '220px', background: '#444', color: '#f4f4f4' }}
+        onMouseOver={e => (e.currentTarget.style.background = '#a12a2a')}
+        onMouseOut={e => (e.currentTarget.style.background = '#444')}
       >
         Join Match
       </button>
-      
       {/* Conditional Leave Match Button */}
       {currentMatch && (
-        <button 
+        <button
           onClick={handleLeaveCurrentMatch}
-          style={{
-            padding: '12px 30px',
-            backgroundColor: '#e74c3c',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            minWidth: '200px',
-            transition: 'background-color 0.3s'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#c0392b'}
-          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#e74c3c'}
+          style={{ minWidth: '220px', background: '#7a1c1c', color: '#f4f4f4' }}
+          onMouseOver={e => (e.currentTarget.style.background = '#a12a2a')}
+          onMouseOut={e => (e.currentTarget.style.background = '#7a1c1c')}
         >
           Leave Current Match
         </button>
       )}
-
-      <button 
-        onClick={() => alert('Settings will be implemented later.')}
-        style={{
-          padding: '12px 30px',
-          backgroundColor: '#a4b0be',
-          color: 'white',
-          border: 'none',
-          borderRadius: '5px',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          minWidth: '200px',
-          transition: 'background-color 0.3s'
-        }}
-        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#747d8c'}
-        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#a4b0be'}
-      >
-        Settings
-      </button>
-      
-      <button 
+      <button
         onClick={() => { logout(); navigate('/'); }}
         style={{
-          padding: '12px 30px',
-          backgroundColor: 'transparent',
-          color: '#ff4757',
-          border: '2px solid #ff4757',
-          borderRadius: '5px',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          minWidth: '200px',
-          transition: 'all 0.3s'
+          minWidth: '220px',
+          background: 'transparent',
+          color: '#a12a2a',
+          border: '2px solid #a12a2a',
+          fontWeight: 700,
         }}
-        onMouseOver={(e) => {
-          e.currentTarget.style.backgroundColor = '#ff4757';
-          e.currentTarget.style.color = 'white';
+        onMouseOver={e => {
+          e.currentTarget.style.background = '#a12a2a';
+          e.currentTarget.style.color = '#fff';
         }}
-        onMouseOut={(e) => {
-          e.currentTarget.style.backgroundColor = 'transparent';
-          e.currentTarget.style.color = '#ff4757';
+        onMouseOut={e => {
+          e.currentTarget.style.background = 'transparent';
+          e.currentTarget.style.color = '#a12a2a';
         }}
       >
         Exit

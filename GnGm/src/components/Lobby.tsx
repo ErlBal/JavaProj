@@ -82,184 +82,118 @@ export default function Lobby() {
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      padding: '20px',
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
       minHeight: '100vh',
-      backgroundColor: '#2f3542'
+      background: '#232323',
+      padding: '0',
     }}>
-      <h2 style={{ color: '#ff4757', marginBottom: '30px' }}>Game Lobby</h2>
-      
+      <h2 style={{ color: '#a12a2a', marginBottom: '28px', fontWeight: 900, letterSpacing: 2, textTransform: 'uppercase' }}>Game Lobby</h2>
       {createdMatchId && (
         <div style={{
-          backgroundColor: '#27ae60',
-          color: 'white',
+          backgroundColor: '#444',
+          color: '#f4f4f4',
           padding: '10px 20px',
-          borderRadius: '5px',
-          marginBottom: '20px'
+          borderRadius: '6px',
+          marginBottom: '18px',
+          fontWeight: 700,
+          letterSpacing: 1
         }}>
           Match created successfully! ID: {createdMatchId}
         </div>
-      )}      {error && (
+      )}
+      {error && (
         <div style={{
-          backgroundColor: '#e74c3c',
-          color: 'white',
+          backgroundColor: '#a12a2a',
+          color: '#f4f4f4',
           padding: '10px 20px',
-          borderRadius: '5px',
-          marginBottom: '20px'
+          borderRadius: '6px',
+          marginBottom: '18px',
+          fontWeight: 700,
         }}>
           {error}
         </div>
       )}
-
       <div style={{
         display: 'flex',
-        gap: '20px',
-        marginBottom: '30px'
+        gap: '18px',
+        marginBottom: '28px',
       }}>
-        <button 
-          onClick={() => navigate('/create-match')}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: '#ff4757',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            transition: 'background-color 0.3s'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#ff3838'}
-          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#ff4757'}
-        >
-          Create New Match
-        </button>
-        
-        <button 
-          onClick={() => fetchMatches()}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: '#5352ed',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            transition: 'background-color 0.3s'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3742fa'}
-          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#5352ed'}
-        >
-          Refresh
-        </button>        <button 
-          onClick={handleExitMatch}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: 'transparent',
-            color: '#a4b0be',
-            border: '2px solid #a4b0be',
-            borderRadius: '5px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            transition: 'all 0.3s'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor = '#a4b0be';
-            e.currentTarget.style.color = '#2f3542';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.color = '#a4b0be';
-          }}
-        >
-          Exit Match
-        </button>
+        <button onClick={() => navigate('/create-match')} style={{ minWidth: '180px' }}>Create New Match</button>
+        <button onClick={() => fetchMatches()} style={{ minWidth: '140px', background: '#444', color: '#f4f4f4' }} onMouseOver={e => (e.currentTarget.style.background = '#a12a2a')} onMouseOut={e => (e.currentTarget.style.background = '#444')}>Refresh</button>
+        <button onClick={handleExitMatch} style={{ minWidth: '140px', background: 'transparent', color: '#a12a2a', border: '2px solid #a12a2a', fontWeight: 700 }} onMouseOver={e => { e.currentTarget.style.background = '#a12a2a'; e.currentTarget.style.color = '#fff'; }} onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#a12a2a'; }}>Exit Match</button>
       </div>
-
       <div style={{ width: '100%', maxWidth: '800px' }}>
-        <h3 style={{ color: '#ff4757', marginBottom: '20px' }}>Active Matches</h3>
-        
+        <h3 style={{ color: '#a12a2a', marginBottom: '18px', fontWeight: 800, letterSpacing: 1 }}>Active Matches</h3>
         {/* Search Field */}
-        <form onSubmit={handleSearch} style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
+        <form onSubmit={handleSearch} style={{ marginBottom: '18px', display: 'flex', gap: '10px' }}>
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search by match name (case-sensitive)"
-            style={{ flex: 1, padding: '10px', borderRadius: '5px', border: '1px solid #ff4757', fontSize: '16px' }}
           />
-          <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#ff4757', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>Search</button>
+          <button type="submit" style={{ minWidth: '110px' }}>Search</button>
         </form>
-        
         {loading ? (
-          <div style={{ color: 'white', textAlign: 'center', padding: '20px' }}>
+          <div style={{ color: '#f4f4f4', textAlign: 'center', padding: '20px' }}>
             Loading matches...
           </div>
         ) : matches.length === 0 ? (
-          <div style={{ 
-            color: '#a4b0be', 
-            textAlign: 'center', 
-            padding: '40px',
-            backgroundColor: '#40495a',
-            borderRadius: '5px'
+          <div style={{
+            color: '#888',
+            textAlign: 'center',
+            padding: '36px',
+            backgroundColor: '#2d2d2d',
+            borderRadius: '6px',
+            border: '1.5px solid #444',
           }}>
             No active matches found. Create one to get started!
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {matches.map((match) => (
-              <div 
+              <div
                 key={match.id}
                 style={{
-                  backgroundColor: '#40495a',
-                  border: createdMatchId === match.id ? '2px solid #ff4757' : '1px solid #57606f',
+                  backgroundColor: '#2d2d2d',
+                  border: createdMatchId === match.id ? '2px solid #a12a2a' : '1.5px solid #444',
                   borderRadius: '8px',
-                  padding: '20px',
+                  padding: '18px',
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'center'
+                  alignItems: 'center',
+                  boxShadow: '0 2px 8px #1116',
                 }}
               >
                 <div>
-                  <h4 style={{ color: '#ff4757', margin: '0 0 5px 0' }}>
+                  <h4 style={{ color: '#a12a2a', margin: '0 0 5px 0', fontWeight: 700, letterSpacing: 1 }}>
                     {match.matchName}
                   </h4>
-                  <p style={{ color: '#a4b0be', margin: '0 0 5px 0' }}>
+                  <p style={{ color: '#f4f4f4', margin: '0 0 5px 0', fontWeight: 500 }}>
                     Players: {match.players?.length || 0}/{match.maxPlayers}
                   </p>
-                  <p style={{ color: '#747d8c', margin: '0', fontSize: '14px' }}>
+                  <p style={{ color: '#888', margin: '0', fontSize: '14px' }}>
                     Match ID: {match.id}
                   </p>
                 </div>
-                
                 <button
                   onClick={() => handleJoinMatch(match.matchName)}
                   disabled={match.players?.length >= match.maxPlayers}
                   style={{
-                    padding: '10px 20px',
-                    backgroundColor: match.players?.length >= match.maxPlayers ? '#57606f' : '#27ae60',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '5px',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
+                    minWidth: '100px',
+                    background: match.players?.length >= match.maxPlayers ? '#444' : '#a12a2a',
+                    color: '#f4f4f4',
+                    fontWeight: 700,
                     cursor: match.players?.length >= match.maxPlayers ? 'not-allowed' : 'pointer',
-                    transition: 'background-color 0.3s'
                   }}
-                  onMouseOver={(e) => {
-                    if (match.players?.length < match.maxPlayers) {
-                      e.currentTarget.style.backgroundColor = '#2ed573';
-                    }
+                  onMouseOver={e => {
+                    if (match.players?.length < match.maxPlayers) e.currentTarget.style.background = '#7a1c1c';
                   }}
-                  onMouseOut={(e) => {
-                    if (match.players?.length < match.maxPlayers) {
-                      e.currentTarget.style.backgroundColor = '#27ae60';
-                    }
+                  onMouseOut={e => {
+                    if (match.players?.length < match.maxPlayers) e.currentTarget.style.background = '#a12a2a';
                   }}
                 >
                   {match.players?.length >= match.maxPlayers ? 'Full' : 'Join'}

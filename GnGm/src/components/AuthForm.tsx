@@ -37,34 +37,61 @@ export default function AuthForm() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 100 }}>
-      <h2>{isLogin ? 'Login' : 'Register'}</h2>
-      {error && <div style={{ color: 'red', marginBottom: 10 }}>{error}</div>}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <input
-          type="text"
-          name="username"
-          placeholder="Username"
-          value={formData.username}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-        />
-        <button type="submit">{isLogin ? 'Login' : 'Register'}</button>
-      </form>
-      <button 
-        onClick={() => setIsLogin(!isLogin)}
-        style={{ marginTop: 10, background: 'none', border: 'none', color: '#646cff' }}
-      >
-        {isLogin ? 'Need an account? Register' : 'Already have an account? Login'}
-      </button>
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#232323',
+    }}>
+      <div style={{
+        background: '#232323',
+        border: '2px solid #a12a2a',
+        borderRadius: 10,
+        padding: '40px 32px',
+        boxShadow: '0 4px 24px #111a',
+        minWidth: 320,
+        maxWidth: 360,
+        width: '100%',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+      }}>
+        <h2 style={{ color: '#a12a2a', fontWeight: 900, letterSpacing: 2, marginBottom: 24, fontSize: 28, textTransform: 'uppercase' }}>{isLogin ? 'Login' : 'Register'}</h2>
+        {error && <div style={{ color: '#f4f4f4', background: '#a12a2a', borderRadius: 4, padding: '8px 12px', marginBottom: 16, fontWeight: 600 }}>{error}</div>}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
+          <input
+            type="text"
+            name="username"
+            placeholder="Username"
+            value={formData.username}
+            onChange={handleChange}
+            required
+            style={{ fontWeight: 600, letterSpacing: 1 }}
+          />
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+            style={{ fontWeight: 600, letterSpacing: 1 }}
+          />
+          <button type="submit" style={{ marginTop: 10 }}>{isLogin ? 'Login' : 'Register'}</button>
+        </form>
+        <button
+          onClick={() => setIsLogin(!isLogin)}
+          style={{
+            marginTop: 18,
+            background: 'none',
+            border: 'none',
+            color: '#a12a2a',
+            fontWeight: 700,
+            fontSize: 15,
+            textDecoration: 'underline',
+            cursor: 'pointer',
+            boxShadow: 'none',
+            padding: 0,
+          }}
+        >
+          {isLogin ? 'Need an account? Register' : 'Already have an account? Login'}
+        </button>
+      </div>
     </div>
   );
 } 
