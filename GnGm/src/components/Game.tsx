@@ -13,6 +13,7 @@ interface Player {
   rotation: number;
   health: number;
   alive: boolean;
+  currentWeaponIndex: number;
 }
 
 interface Projectile {
@@ -258,6 +259,24 @@ const Game: React.FC = () => {
       .catch(err => console.error('Failed to fetch walls:', err));
   }, []);
   
+  // Helper to get current weapon for the local player
+  const getCurrentWeapon = () => {
+    if (!currentPlayer) return null;
+    // Find the player in gameState (authoritative)
+    const player = gameState.players[currentPlayer.id];
+    if (!player || typeof player.currentWeaponIndex !== 'number') return null;
+    const weapon = (window as any).GUN_GAME_WEAPONS?.[player.currentWeaponIndex];
+    // Fallback: reconstruct weapon list here
+    const fallbackWeapons = [
+      { name: 'Pistol', bulletsPerShot: 1 },
+      { name: 'PP', bulletsPerShot: 1 },
+      { name: 'Machine Gun', bulletsPerShot: 1 },
+      { name: 'Shotgun', bulletsPerShot: 6 },
+      { name: 'Rifle', bulletsPerShot: 1 }
+    ];
+    return fallbackWeapons[player.currentWeaponIndex] || fallbackWeapons[0];
+  };
+  
   // Render game
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -434,6 +453,15 @@ const Game: React.FC = () => {
       </div>
       {/* Bottom Right: Stats and Respawn */}
       <div className="hud-corner hud-bottom-right">
+        {/* Weapon info */}
+        {(() => {
+          const weapon = getCurrentWeapon();
+          return weapon ? (
+            <div style={{ fontWeight: 'bold', marginBottom: 8 }}>
+              Weapon: {weapon.name} | Bullets: {weapon.bulletsPerShot}
+            </div>
+          ) : null;
+        })()}
         <div style={{ fontSize: '14px', opacity: 0.8 }}>
           Players: {Object.keys(gameState.players).length} | Bullets: {Object.keys(gameState.projectiles).length}
         </div>
@@ -476,12 +504,20 @@ const Game: React.FC = () => {
           background: 'rgba(0,0,0,0.7)',
           color: '#fff',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: '3rem',
           zIndex: 1000
         }}>
-          Winner: {winnerName}
+          <div style={{ marginBottom: 32 }}>Winner: {winnerName}</div>
+          <button
+            className="hud-btn"
+            style={{ fontSize: '2rem', padding: '16px 32px', marginTop: 16 }}
+            onClick={() => navigate('/menu')}
+          >
+            Exit to Menu
+          </button>
         </div>
       )}
     </>
