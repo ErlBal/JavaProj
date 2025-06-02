@@ -47,7 +47,6 @@ const Game: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>({ players: {}, projectiles: {} });
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [connected, setConnected] = useState(false);
-  const [walls, setWalls] = useState<Wall[]>([]);
     // Input handling
   const keysPressed = useRef<{ [key: string]: boolean }>({});
   const mousePos = useRef({ x: 0, y: 0 });
@@ -72,8 +71,6 @@ const Game: React.FC = () => {
   // Game constants
   const WORLD_W = 1600;
   const WORLD_H = 1200;
-  const CANVAS_W = 1000;
-  const CANVAS_H = 700;
   const PLAYER_SIZE = 40;
     // WebSocket connection
   useEffect(() => {    const client = new Client({
@@ -122,12 +119,6 @@ const Game: React.FC = () => {
       client.deactivate();
     };
   }, [matchId]);
-  
-  useEffect(() => {
-    axios.get(`/api/walls/${selectedMap}`)
-      .then(res => setWalls(res.data))
-      .catch(() => setWalls([]));
-  }, [selectedMap]);
   
   // Cleanup on page refresh or component unmount
   useEffect(() => {
@@ -192,8 +183,8 @@ const Game: React.FC = () => {
     if (!currentPlayer || !clientRef.current || !connected) return;
     
     // Calculate shoot direction
-    const playerScreenX = (currentPlayer.x / WORLD_W) * CANVAS_W;
-    const playerScreenY = (currentPlayer.y / WORLD_H) * CANVAS_H;
+    const playerScreenX = (currentPlayer.x / WORLD_W) * window.innerWidth;
+    const playerScreenY = (currentPlayer.y / WORLD_H) * window.innerHeight;
     
     const dx = mousePos.current.x - playerScreenX;
     const dy = mousePos.current.y - playerScreenY;
@@ -244,8 +235,8 @@ const Game: React.FC = () => {
       // Debug: Log current velocity and keys
       console.log('Movement keys:', keys, 'vx:', vx, 'vy:', vy);
       
-      const playerScreenX = (player.x / WORLD_W) * CANVAS_W;
-      const playerScreenY = (player.y / WORLD_H) * CANVAS_H;
+      const playerScreenX = (player.x / WORLD_W) * window.innerWidth;
+      const playerScreenY = (player.y / WORLD_H) * window.innerHeight;
       const dx = mousePos.current.x - playerScreenX;
       const dy = mousePos.current.y - playerScreenY;
       const rotation = Math.atan2(dy, dx);
@@ -270,28 +261,28 @@ const Game: React.FC = () => {
     
     // Clear screen
     ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
     
     // Draw grid
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 1;
-    for (let x = 0; x < CANVAS_W; x += 50) {
+    for (let x = 0; x < window.innerWidth; x += 50) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
-      ctx.lineTo(x, CANVAS_H);
+      ctx.lineTo(x, window.innerHeight);
       ctx.stroke();
     }
-    for (let y = 0; y < CANVAS_H; y += 50) {
+    for (let y = 0; y < window.innerHeight; y += 50) {
       ctx.beginPath();
       ctx.moveTo(0, y);
-      ctx.lineTo(CANVAS_W, y);
+      ctx.lineTo(window.innerWidth, y);
       ctx.stroke();
     }
     
     // Draw players
     Object.values(gameState.players).forEach(player => {
-      const screenX = (player.x / WORLD_W) * CANVAS_W;
-      const screenY = (player.y / WORLD_H) * CANVAS_H;
+      const screenX = (player.x / WORLD_W) * window.innerWidth;
+      const screenY = (player.y / WORLD_H) * window.innerHeight;
       
       // Player circle
       ctx.fillStyle = player.alive ? '#ff4444' : '#666';
@@ -346,23 +337,15 @@ const Game: React.FC = () => {
     });
       // Draw projectiles
     Object.values(gameState.projectiles).forEach(proj => {
-      const screenX = (proj.x / WORLD_W) * CANVAS_W;
-      const screenY = (proj.y / WORLD_H) * CANVAS_H;
+      const screenX = (proj.x / WORLD_W) * window.innerWidth;
+      const screenY = (proj.y / WORLD_H) * window.innerHeight;
       
       ctx.fillStyle = '#ff6';
       ctx.beginPath();
       ctx.arc(screenX, screenY, 3, 0, Math.PI * 2);
       ctx.fill();
     });
-      // Draw walls
-    ctx.fillStyle = '#555';
-    if (Array.isArray(walls)) {
-      walls.forEach(wall => {
-        ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
-      });
-    }
-    
-  }, [gameState, walls]);
+  }, [gameState]);
   
   // Respawn
   const respawn = () => {
@@ -377,65 +360,113 @@ const Game: React.FC = () => {
     });
   };
   
+  // Make canvas full screen and responsive
+  const [canvasSize, setCanvasSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+  useEffect(() => {
+    const handleResize = () => {
+      setCanvasSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
   return (
-    <div style={{ textAlign: 'center', padding: '20px' }}>
-      <h2>Test Area</h2>
-      
-      <div style={{ marginBottom: '10px' }}>
+    <>
+      <style>{`
+        html, body {
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+          height: 100%;
+        }
+        #game-canvas {
+          position: fixed;
+          left: 0;
+          top: 0;
+          width: 100vw;
+          height: 100vh;
+          z-index: 0;
+          display: block;
+          border: none;
+        }
+        .hud-corner {
+          position: fixed;
+          z-index: 2;
+          color: #ccc;
+          font-family: Arial, sans-serif;
+          font-size: 16px;
+          pointer-events: none;
+        }
+        .hud-top-left { left: 20px; top: 20px; text-align: left; }
+        .hud-top-right { right: 20px; top: 20px; text-align: right; }
+        .hud-bottom-left { left: 20px; bottom: 20px; text-align: left; }
+        .hud-bottom-right { right: 20px; bottom: 20px; text-align: right; }
+        .hud-btn {
+          pointer-events: auto;
+          padding: 10px 20px;
+          font-size: 16px;
+          background-color: #f44;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          margin-top: 10px;
+        }
+      `}</style>
+      {/* Top Left: Status */}
+      <div className="hud-corner hud-top-left">
         <span style={{ color: connected ? '#4a4' : '#f44', fontWeight: 'bold' }}>
           {connected ? '🟢 ONLINE' : '🔴 OFFLINE'}
         </span>
-        
+      </div>
+      {/* Top Right: Player Info */}
+      <div className="hud-corner hud-top-right">
         {currentPlayer && (
-          <span style={{ marginLeft: '20px', color: '#ccc' }}>
+          <span>
             {currentPlayer.username} | HP: {currentPlayer.health} | 
-            {currentPlayer.alive ? ' 🟢 ALIVE' : ' 💀 DEAD'}
+            {currentPlayer.alive ? <span style={{ color: '#4a4' }}>🟢 ALIVE</span> : <span style={{ color: '#f44' }}>💀 DEAD</span>}
           </span>
         )}
       </div>
-      
+      {/* Bottom Left: Controls */}
+      <div className="hud-corner hud-bottom-left">
+        <strong>Controls:</strong> WASD = Move<br />Mouse = Aim<br />Click = Shoot
+      </div>
+      {/* Bottom Right: Stats and Respawn */}
+      <div className="hud-corner hud-bottom-right">
+        <div style={{ fontSize: '14px', opacity: 0.8 }}>
+          Players: {Object.keys(gameState.players).length} | Bullets: {Object.keys(gameState.projectiles).length}
+        </div>
+        {currentPlayer && !currentPlayer.alive && (
+          <button className="hud-btn" onClick={respawn}>
+            🔄 RESPAWN
+          </button>
+        )}
+      </div>
       <canvas
+        id="game-canvas"
         ref={canvasRef}
-        width={CANVAS_W}
-        height={CANVAS_H}        style={{ 
-          border: '2px solid #333',
+        width={canvasSize.width}
+        height={canvasSize.height}
+        style={{
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          width: '100vw',
+          height: '100vh',
           backgroundColor: '#1a1a1a',
           cursor: 'crosshair',
-          outline: 'none'
+          outline: 'none',
+          zIndex: 0,
+          border: 'none',
+          display: 'block'
         }}
         tabIndex={0}
         onMouseMove={handleMouseMove}
         onClick={handleClick}
         onFocus={() => console.log('🎯 Canvas focused - keyboard ready!')}
       />
-      
-      <div style={{ marginTop: '10px', color: '#ccc' }}>
-        <p><strong>Controls:</strong> WASD = Move | Mouse = Aim | Click = Shoot</p>
-        
-        {currentPlayer && !currentPlayer.alive && (
-          <button 
-            onClick={respawn}
-            style={{
-              padding: '10px 20px',
-              fontSize: '16px',
-              backgroundColor: '#f44',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              marginTop: '10px'
-            }}
-          >
-            🔄 RESPAWN
-          </button>
-        )}
-        
-        <div style={{ marginTop: '10px', fontSize: '14px', opacity: 0.7 }}>
-          Players: {Object.keys(gameState.players).length} | 
-          Bullets: {Object.keys(gameState.projectiles).length}
-        </div>
-      </div>
-    </div>
+    </>
   );
 };
 
