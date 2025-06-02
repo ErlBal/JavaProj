@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import jakarta.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.*;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 @RequiredArgsConstructor
@@ -19,11 +20,15 @@ public class GameEngineService {
     private static final double PROJECTILE_SPEED = 300.0;
     private static final int PROJECTILE_DAMAGE = 25;
     private static final int MAX_HEALTH = 100;
+    private static final double PLAYER_RADIUS = 20.0;
+    private static final String WALLS_API_URL = "http://localhost:9090/api/map/walls";
     
     // Game state
     private final Map<Integer, Player> players = new ConcurrentHashMap<>();
     private final Map<String, Projectile> projectiles = new ConcurrentHashMap<>();
     private final ScheduledExecutorService gameLoop = Executors.newSingleThreadScheduledExecutor();
+    private List<Map<String, Object>> wallRects = new ArrayList<>();
+    private long lastWallFetch = 0;
     
     // Multi-match support
     public static class MatchState {
@@ -38,19 +43,26 @@ public class GameEngineService {
     
     @PostConstruct
     public void startGameLoop() {
-        // Update all matches at 60 FPS
         gameLoop.scheduleAtFixedRate(() -> {
+            fetchWallsIfNeeded();
             for (Long matchId : matches.keySet()) {
-                // Update player positions by velocity
                 MatchState match = matches.get(matchId);
                 if (match != null) {
-                    // Remove wall collision: players can move freely within bounds
                     for (Player player : match.players.values()) {
                         if (player.alive) {
-                            double newX = Math.max(20, Math.min(MAP_WIDTH - 20, player.x + player.vx));
-                            double newY = Math.max(20, Math.min(MAP_HEIGHT - 20, player.y + player.vy));
-                            // No wall collision check
-                            // System.out.println("Moving player " + player.id + " from (" + player.x + ", " + player.y + ") to (" + newX + ", " + newY + ") with vx=" + player.vx + ", vy=" + player.vy);
+                            double tryX = Math.max(20, Math.min(MAP_WIDTH - 20, player.x + player.vx));
+                            double tryY = Math.max(20, Math.min(MAP_HEIGHT - 20, player.y + player.vy));
+                            // Sliding collision: try X and Y separately
+                            double newX = player.x;
+                            double newY = player.y;
+                            // Try X movement
+                            if (!collidesWithWall(tryX, player.y)) {
+                                newX = tryX;
+                            }
+                            // Try Y movement
+                            if (!collidesWithWall(newX, tryY)) {
+                                newY = tryY;
+                            }
                             player.x = newX;
                             player.y = newY;
                         }
@@ -267,5 +279,39 @@ public class GameEngineService {
                 }
             }
         }
+    }
+
+    private void fetchWallsIfNeeded() {
+        // Fetch wall data every 10 seconds or if empty
+        if (wallRects.isEmpty() || System.currentTimeMillis() - lastWallFetch > 10000) {
+            try {
+                RestTemplate restTemplate = new RestTemplate();
+                List<Map<String, Object>> walls = restTemplate.getForObject(WALLS_API_URL, List.class);
+                if (walls != null) {
+                    wallRects = walls;
+                    lastWallFetch = System.currentTimeMillis();
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to fetch wall data: " + e.getMessage());
+            }
+        }
+    }
+
+    private boolean collidesWithWall(double x, double y) {
+        for (Map<String, Object> wall : wallRects) {
+            double wx = ((Number) wall.get("x")).doubleValue();
+            double wy = ((Number) wall.get("y")).doubleValue();
+            double ww = ((Number) wall.get("width")).doubleValue();
+            double wh = ((Number) wall.get("height")).doubleValue();
+            // AABB vs circle collision
+            double closestX = Math.max(wx, Math.min(x, wx + ww));
+            double closestY = Math.max(wy, Math.min(y, wy + wh));
+            double dx = x - closestX;
+            double dy = y - closestY;
+            if (dx * dx + dy * dy < PLAYER_RADIUS * PLAYER_RADIUS) {
+                return true;
+            }
+        }
+        return false;
     }
 }
