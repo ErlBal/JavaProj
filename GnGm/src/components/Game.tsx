@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 // Simple types
@@ -26,6 +26,8 @@ interface Projectile {
 interface GameState {
   players: { [key: number]: Player };
   projectiles: { [key: string]: Projectile };
+  gameOver: boolean;
+  winnerName: string | null;
 }
 
 interface Wall {
@@ -44,7 +46,7 @@ const Game: React.FC = () => {
   const matchId = location.state?.matchId || localStorage.getItem('matchId');
   
   // Game state
-  const [gameState, setGameState] = useState<GameState>({ players: {}, projectiles: {} });
+  const [gameState, setGameState] = useState<GameState>({ players: {}, projectiles: {}, gameOver: false, winnerName: null });
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [connected, setConnected] = useState(false);
     // Input handling
@@ -53,6 +55,9 @@ const Game: React.FC = () => {
   const currentPlayerRef = useRef<Player | null>(null);
   const connectedRef = useRef<boolean>(false);
   const [walls, setWalls] = useState<Wall[]>([]);
+  const [gameOver, setGameOver] = useState(false);
+  const [winnerName, setWinnerName] = useState<string | null>(null);
+  const navigate = useNavigate();
   
   // Update refs when state changes
   useEffect(() => {
@@ -91,6 +96,14 @@ const Game: React.FC = () => {
           } else {
             console.log('❌ Current player not found in game state');
           }
+          
+          if ('gameOver' in state) setGameOver(state.gameOver);
+          if ('winnerName' in state) setWinnerName(state.winnerName);
+          if (state.gameOver) {
+            setTimeout(() => {
+              navigate('/menu');
+            }, 4000);
+          }
         });
         
         // Join the game
@@ -119,7 +132,7 @@ const Game: React.FC = () => {
       return () => {
       client.deactivate();
     };
-  }, [matchId]);
+  }, [matchId, navigate]);
   
   // Cleanup on page refresh or component unmount
   useEffect(() => {
@@ -210,22 +223,7 @@ const Game: React.FC = () => {
       const canvas = canvasRef.current;
       console.log('[MoveLoop] Player:', player);
       console.log('[MoveLoop] Canvas:', canvas);
-      if (!player) {
-        console.log('[MoveLoop] ❌ No current player');
-        return;
-      }
-      if (!client) {
-        console.log('[MoveLoop] ❌ No WebSocket client');
-        return;
-      }
-      if (!isConnected) {
-        console.log('[MoveLoop] ❌ Not connected');
-        return;
-      }
-      if (!canvas) {
-        console.log('[MoveLoop] ❌ No canvas');
-        return;
-      }
+      if (!player || !client || !isConnected || !canvas) return;
       const keys = keysPressed.current;
       let vx = 0;
       let vy = 0;
@@ -233,7 +231,7 @@ const Game: React.FC = () => {
       if (keys['s']) vy += 5;
       if (keys['a']) vx -= 5;
       if (keys['d']) vx += 5;
-      // Convert mouse position from canvas to world coordinates
+      // Always send movement, even if vx/vy are zero
       const mouseWorldX = (mousePos.current.x / canvas.width) * WORLD_W;
       const mouseWorldY = (mousePos.current.y / canvas.height) * WORLD_H;
       const dx = mouseWorldX - player.x;
@@ -468,6 +466,24 @@ const Game: React.FC = () => {
         onClick={handleClick}
         onFocus={() => console.log('🎯 Canvas focused - keyboard ready!')}
       />
+      {gameOver && winnerName && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.7)',
+          color: '#fff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '3rem',
+          zIndex: 1000
+        }}>
+          Winner: {winnerName}
+        </div>
+      )}
     </>
   );
 };

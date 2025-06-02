@@ -35,31 +35,65 @@ public class GameEngineService {
         public String mapName;
         public Map<Integer, Player> players = new ConcurrentHashMap<>();
         public Map<String, Projectile> projectiles = new ConcurrentHashMap<>();
+        public boolean gameOver = false;
+        public String winnerName = null;
+        public long winnerAnnounceTime = 0;
         public MatchState(String mapName) {
             this.mapName = mapName;
         }
     }
     public final Map<Long, MatchState> matches = new ConcurrentHashMap<>();
     
+    // --- Gun Game Weapon System ---
+    public static class Weapon {
+        public final String name;
+        public final int damage;
+        public final double fireRate;
+        public final double spread; // in radians
+        public final int bulletsPerShot;
+        public Weapon(String name, int damage, double fireRate, double spread, int bulletsPerShot) {
+            this.name = name;
+            this.damage = damage;
+            this.fireRate = fireRate;
+            this.spread = spread;
+            this.bulletsPerShot = bulletsPerShot;
+        }
+    }
+    // Gun Game weapon order
+    public static final List<Weapon> GUN_GAME_WEAPONS = List.of(
+        new Weapon("Pistol", 25, 1.0, Math.toRadians(5), 1),
+        new Weapon("PP", 10, 0.2, Math.toRadians(7), 1),
+        new Weapon("Machine Gun", 18, 0.3, Math.toRadians(7), 1),
+        new Weapon("Shotgun", 7, 1.2, Math.toRadians(30), 6),
+        new Weapon("Rifle", 50, 1.5, 0.0, 1)
+    );
+    
     @PostConstruct
     public void startGameLoop() {
         gameLoop.scheduleAtFixedRate(() -> {
             fetchWallsIfNeeded();
+            List<Long> matchesToRemove = new ArrayList<>();
             for (Long matchId : matches.keySet()) {
                 MatchState match = matches.get(matchId);
                 if (match != null) {
+                    if (match.gameOver) {
+                        // Pause game logic, just broadcast state
+                        broadcastGameState(matchId);
+                        // After 4 seconds, end match
+                        if (System.currentTimeMillis() - match.winnerAnnounceTime > 4000) {
+                            matchesToRemove.add(matchId);
+                        }
+                        continue;
+                    }
                     for (Player player : match.players.values()) {
                         if (player.alive) {
                             double tryX = Math.max(20, Math.min(MAP_WIDTH - 20, player.x + player.vx));
                             double tryY = Math.max(20, Math.min(MAP_HEIGHT - 20, player.y + player.vy));
-                            // Sliding collision: try X and Y separately
                             double newX = player.x;
                             double newY = player.y;
-                            // Try X movement
                             if (!collidesWithWall(tryX, player.y)) {
                                 newX = tryX;
                             }
-                            // Try Y movement
                             if (!collidesWithWall(newX, tryY)) {
                                 newY = tryY;
                             }
@@ -67,11 +101,15 @@ public class GameEngineService {
                             player.y = newY;
                         }
                     }
+                    updateProjectiles(matchId);
+                    checkCollisions(matchId);
+                    cleanupDeadPlayers(matchId);
+                    broadcastGameState(matchId);
                 }
-                updateProjectiles(matchId);
-                checkCollisions(matchId);
-                cleanupDeadPlayers(matchId);
-                broadcastGameState(matchId);
+            }
+            // Remove finished matches
+            for (Long id : matchesToRemove) {
+                matches.remove(id);
             }
         }, 0, 16, TimeUnit.MILLISECONDS);
     }
@@ -86,6 +124,8 @@ public class GameEngineService {
         public long deathTime = 0;
         public double vx = 0; // velocity x
         public double vy = 0; // velocity y
+        public int currentWeaponIndex = 0;
+        public long lastShootTime = 0;
         
         public Player(int id, String username) {
             this.id = id;
@@ -93,6 +133,10 @@ public class GameEngineService {
             // Random spawn position
             this.x = 100 + Math.random() * (MAP_WIDTH - 200);
             this.y = 100 + Math.random() * (MAP_HEIGHT - 200);
+            this.currentWeaponIndex = 0;
+        }
+        public Weapon getWeapon() {
+            return GUN_GAME_WEAPONS.get(Math.max(0, Math.min(currentWeaponIndex, GUN_GAME_WEAPONS.size() - 1)));
         }
     }
     
@@ -152,7 +196,7 @@ public class GameEngineService {
     // Move player in match
     public void movePlayer(long matchId, int playerId, double vx, double vy, double rotation) {
         MatchState match = matches.get(matchId);
-        if (match != null) {
+        if (match != null && !match.gameOver) {
             Player player = match.players.get(playerId);
             if (player != null && player.alive) {
                 player.vx = vx;
@@ -162,6 +206,8 @@ public class GameEngineService {
             } else {
                 System.out.println("Player not found or not alive: " + playerId);
             }
+        } else if (match != null && match.gameOver) {
+            // Ignore movement during game over
         } else {
             System.out.println("Match not found: " + matchId);
         }
@@ -170,11 +216,21 @@ public class GameEngineService {
     // Player shoots in match
     public void playerShoot(long matchId, int playerId, double direction) {
         MatchState match = matches.get(matchId);
-        if (match != null) {
+        if (match != null && !match.gameOver) {
             Player player = match.players.get(playerId);
             if (player != null && player.alive) {
-                Projectile bullet = new Projectile(player.x, player.y, direction, playerId);
-                match.projectiles.put(bullet.id, bullet);
+                Weapon weapon = player.getWeapon();
+                long now = System.currentTimeMillis();
+                if (now - player.lastShootTime < (long)(weapon.fireRate * 1000)) {
+                    return; // fire rate limit
+                }
+                player.lastShootTime = now;
+                for (int i = 0; i < weapon.bulletsPerShot; i++) {
+                    double spreadAngle = weapon.spread * (Math.random() - 0.5);
+                    double shotDir = direction + spreadAngle;
+                    Projectile bullet = new Projectile(player.x, player.y, shotDir, playerId);
+                    match.projectiles.put(bullet.id, bullet);
+                }
                 broadcastGameState(matchId);
             }
         }
@@ -201,7 +257,7 @@ public class GameEngineService {
     // Check collisions in match
     public void checkCollisions(long matchId) {
         MatchState match = matches.get(matchId);
-        if (match != null) {
+        if (match != null && !match.gameOver) {
             match.projectiles.entrySet().removeIf(projEntry -> {
                 Projectile proj = projEntry.getValue();
                 for (Player player : match.players.values()) {
@@ -211,11 +267,24 @@ public class GameEngineService {
                     double dx = proj.x - player.x;
                     double dy = proj.y - player.y;
                     if (Math.sqrt(dx * dx + dy * dy) < 25) {
-                        player.health -= PROJECTILE_DAMAGE;
-                        if (player.health <= 0) {
-                            player.alive = false;
-                            player.health = 0;
-                            player.deathTime = System.currentTimeMillis();
+                        Player shooter = match.players.get(proj.playerId);
+                        if (shooter != null) {
+                            Weapon weapon = shooter.getWeapon();
+                            player.health -= weapon.damage;
+                            if (player.health <= 0) {
+                                player.alive = false;
+                                player.health = 0;
+                                player.deathTime = System.currentTimeMillis();
+                                // Gun Game: advance killer's weapon
+                                shooter.currentWeaponIndex++;
+                                if (shooter.currentWeaponIndex >= GUN_GAME_WEAPONS.size()) {
+                                    match.gameOver = true;
+                                    match.winnerName = shooter.username;
+                                    match.winnerAnnounceTime = System.currentTimeMillis();
+                                    System.out.println("WINNER: " + shooter.username + " (ID: " + shooter.id + ")");
+                                    shooter.currentWeaponIndex = GUN_GAME_WEAPONS.size() - 1;
+                                }
+                            }
                         }
                         return true;
                     }
@@ -246,6 +315,12 @@ public class GameEngineService {
         if (match != null) {
             try {
                 GameState state = new GameState(match.players, match.projectiles);
+                // Add winner/gameOver info if present
+                if (match.gameOver) {
+                    // Use reflection or extend GameState if needed for frontend
+                    // For now, just print
+                    System.out.println("Broadcasting WINNER: " + match.winnerName);
+                }
                 messagingTemplate.convertAndSend("/topic/game/state/" + matchId, state);
             } catch (Exception e) {
                 System.err.println("Error broadcasting: " + e.getMessage());
