@@ -52,6 +52,7 @@ const Game: React.FC = () => {
   const mousePos = useRef({ x: 0, y: 0 });
   const currentPlayerRef = useRef<Player | null>(null);
   const connectedRef = useRef<boolean>(false);
+  const [walls, setWalls] = useState<Wall[]>([]);
   
   // Update refs when state changes
   useEffect(() => {
@@ -202,25 +203,29 @@ const Game: React.FC = () => {
     // Movement loop
   useEffect(() => {
     const moveLoop = setInterval(() => {
-      console.log('Movement loop tick');
-      // Use refs to get current values
+      console.log('[MoveLoop] Tick');
       const player = currentPlayerRef.current;
       const isConnected = connectedRef.current;
       const client = clientRef.current;
-      
+      const canvas = canvasRef.current;
+      console.log('[MoveLoop] Player:', player);
+      console.log('[MoveLoop] Canvas:', canvas);
       if (!player) {
-        console.log('❌ No current player');
+        console.log('[MoveLoop] ❌ No current player');
         return;
       }
       if (!client) {
-        console.log('❌ No WebSocket client');
+        console.log('[MoveLoop] ❌ No WebSocket client');
         return;
       }
       if (!isConnected) {
-        console.log('❌ Not connected');
+        console.log('[MoveLoop] ❌ Not connected');
         return;
       }
-      
+      if (!canvas) {
+        console.log('[MoveLoop] ❌ No canvas');
+        return;
+      }
       const keys = keysPressed.current;
       let vx = 0;
       let vy = 0;
@@ -228,68 +233,73 @@ const Game: React.FC = () => {
       if (keys['s']) vy += 5;
       if (keys['a']) vx -= 5;
       if (keys['d']) vx += 5;
-      
-      // Debug: Log current velocity and keys
-      console.log('Movement keys:', keys, 'vx:', vx, 'vy:', vy);
-      
       // Convert mouse position from canvas to world coordinates
-      const canvas = canvasRef.current;
-      if (!canvas) return;
       const mouseWorldX = (mousePos.current.x / canvas.width) * WORLD_W;
       const mouseWorldY = (mousePos.current.y / canvas.height) * WORLD_H;
       const dx = mouseWorldX - player.x;
       const dy = mouseWorldY - player.y;
       const rotation = Math.atan2(dy, dx);
       const newRotation = rotation;
-      
-      // Debug: Log outgoing movement message
-      console.log('Sending movement:', { matchId, playerId: player.id, vx, vy, rotation: newRotation });
+      console.log('[MoveLoop] Sending movement:', { matchId, playerId: player.id, vx, vy, rotation: newRotation });
       client.publish({
         destination: '/app/game/move',
         body: JSON.stringify({ matchId, playerId: player.id, vx, vy, rotation: newRotation })
       });
-    }, 1000 / 60); // 60 FPS
-
+    }, 1000 / 60);
     return () => clearInterval(moveLoop);
   }, [matchId, currentPlayer]);
+  
+  // Fetch wall data on mount
+  useEffect(() => {
+    fetch('http://localhost:9090/api/map/walls')
+      .then(res => res.json())
+      .then(data => {
+        setWalls(data);
+        console.log('Fetched walls:', data);
+      })
+      .catch(err => console.error('Failed to fetch walls:', err));
+  }, []);
   
   // Render game
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
-    
     // Clear screen
     ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-    
-    // Draw grid
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Draw grid using canvas size
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 1;
-    for (let x = 0; x < window.innerWidth; x += 50) {
+    for (let x = 0; x < canvas.width; x += 50) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
-      ctx.lineTo(x, window.innerHeight);
+      ctx.lineTo(x, canvas.height);
       ctx.stroke();
     }
-    for (let y = 0; y < window.innerHeight; y += 50) {
+    for (let y = 0; y < canvas.height; y += 50) {
       ctx.beginPath();
       ctx.moveTo(0, y);
-      ctx.lineTo(window.innerWidth, y);
+      ctx.lineTo(canvas.width, y);
       ctx.stroke();
     }
-    
+    // Draw walls first
+    walls.forEach(wall => {
+      const x = (wall.x / WORLD_W) * canvas.width;
+      const y = (wall.y / WORLD_H) * canvas.height;
+      const w = (wall.width / WORLD_W) * canvas.width;
+      const h = (wall.height / WORLD_H) * canvas.height;
+      ctx.fillStyle = '#444';
+      ctx.fillRect(x, y, w, h);
+    });
     // Draw players
     Object.values(gameState.players).forEach(player => {
-      const screenX = (player.x / WORLD_W) * window.innerWidth;
-      const screenY = (player.y / WORLD_H) * window.innerHeight;
-      
-      // Player circle
+      const screenX = (player.x / WORLD_W) * canvas.width;
+      const screenY = (player.y / WORLD_H) * canvas.height;
       ctx.fillStyle = player.alive ? '#ff4444' : '#666';
       ctx.beginPath();
       ctx.arc(screenX, screenY, PLAYER_SIZE / 2, 0, Math.PI * 2);
       ctx.fill();
-      
       // Direction line
       if (player.alive) {
         ctx.strokeStyle = '#fff';
@@ -297,7 +307,6 @@ const Game: React.FC = () => {
         ctx.beginPath();
         ctx.moveTo(screenX, screenY);
         if (currentPlayer && player.id === currentPlayer.id) {
-          // For the local player, draw the stick towards the mouse with fixed length
           const dx = mousePos.current.x - screenX;
           const dy = mousePos.current.y - screenY;
           const length = Math.sqrt(dx * dx + dy * dy);
@@ -309,7 +318,6 @@ const Game: React.FC = () => {
             screenY + dirY * stickLength
           );
         } else {
-          // For other players, use their rotation from the backend
           ctx.lineTo(
             screenX + Math.cos(player.rotation) * 25,
             screenY + Math.sin(player.rotation) * 25
@@ -317,35 +325,29 @@ const Game: React.FC = () => {
         }
         ctx.stroke();
       }
-      
       // Health bar
       const barW = 40;
       const barH = 6;
       const healthPct = player.health / 100;
-      
       ctx.fillStyle = '#333';
       ctx.fillRect(screenX - barW/2, screenY - 30, barW, barH);
-      
       ctx.fillStyle = healthPct > 0.3 ? '#4a4' : '#f44';
       ctx.fillRect(screenX - barW/2, screenY - 30, barW * healthPct, barH);
-      
-      // Username
       ctx.fillStyle = '#fff';
       ctx.font = '12px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(player.username, screenX, screenY - 35);
     });
-      // Draw projectiles
+    // Draw projectiles
     Object.values(gameState.projectiles).forEach(proj => {
-      const screenX = (proj.x / WORLD_W) * window.innerWidth;
-      const screenY = (proj.y / WORLD_H) * window.innerHeight;
-      
+      const screenX = (proj.x / WORLD_W) * canvas.width;
+      const screenY = (proj.y / WORLD_H) * canvas.height;
       ctx.fillStyle = '#ff6';
       ctx.beginPath();
       ctx.arc(screenX, screenY, 3, 0, Math.PI * 2);
       ctx.fill();
     });
-  }, [gameState]);
+  }, [gameState, walls]);
   
   // Respawn
   const respawn = () => {

@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/ws/**").permitAll()
                 .requestMatchers("/ws/**", "/ws", "/", "/index.html", "/js/**", "/css/**", "/favicon.ico").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/map/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

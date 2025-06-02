@@ -34,5 +34,6 @@ D:\GitHub\JavaProj\src\main\java\com\gngm\service\MatchService.java
 D:\GitHub\JavaProj\src\main\java\com\gngm\config\WebConfig.java
 D:\GitHub\JavaProj\src\main\java\com\gngm\config\GameBroadcastScheduler.java
 D:\GitHub\JavaProj\src\main\java\com\gngm\dto\MatchCreateRequest.java
+D:\GitHub\JavaProj\src\main\java\com\gngm\controller\MapController.java
 D:\GitHub\JavaProj\src\main\java\com\gngm\dto\MatchJoinRequest.java
 D:\GitHub\JavaProj\src\main\java\com\gngm\dto\PlayerRegistrationRequest.java
