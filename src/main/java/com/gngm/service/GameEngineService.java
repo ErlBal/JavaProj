@@ -101,10 +101,13 @@ public class GameEngineService {
     // Add player to match
     public void addPlayer(long matchId, int playerId, String username) {
         MatchState match = matches.get(matchId);
-        if (match != null) {
-            match.players.put(playerId, new Player(playerId, username));
-            broadcastGameState(matchId);
+        if (match == null) {
+            // Auto-create match with default map if missing
+            match = new MatchState("Map1");
+            matches.put(matchId, match);
         }
+        match.players.put(playerId, new Player(playerId, username));
+        broadcastGameState(matchId);
     }
 
     // Remove player from match

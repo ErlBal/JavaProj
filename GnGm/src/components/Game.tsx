@@ -212,7 +212,8 @@ const Game: React.FC = () => {
     console.log('💥 Shooting!');
   };
     // Movement loop
-  useEffect(() => {    const moveLoop = setInterval(() => {
+  useEffect(() => {
+    const moveLoop = setInterval(() => {
       // Use refs to get current values
       const player = currentPlayerRef.current;
       const isConnected = connectedRef.current;
@@ -250,22 +251,21 @@ const Game: React.FC = () => {
       const playerScreenY = (player.y / WORLD_H) * CANVAS_H;
       const dx = mousePos.current.x - playerScreenX;
       const dy = mousePos.current.y - playerScreenY;
-      const rotation = Math.atan2(dy, dx);      // Send movement
+      const rotation = Math.atan2(dy, dx);
+      const newRotation = rotation;
+      
+      // Send movement
       if (deltaX !== 0 || deltaY !== 0) {
-        console.log('🚶 Sending movement:', { playerId: player.id, deltaX, deltaY, rotation });
+        console.log('🚶 Sending movement:', { playerId: player.id, deltaX, deltaY, rotation: newRotation });
         client.publish({
           destination: '/app/game/move',
-          body: JSON.stringify({
-            matchId,
-            playerId: player.id,
-            deltaX,
-            deltaY,
-            rotation
-          })        });
+          body: JSON.stringify({ matchId, playerId: player.id, deltaX, deltaY, rotation: newRotation })
+        });
       }
-    }, 16); // 60 FPS for smoother movement
-      return () => clearInterval(moveLoop);
-  }, []); // Remove dependencies to prevent constant recreation
+    }, 1000 / 30); // 30 FPS
+
+    return () => clearInterval(moveLoop);
+  }, [matchId, currentPlayer]);
   
   // Render game
   useEffect(() => {
