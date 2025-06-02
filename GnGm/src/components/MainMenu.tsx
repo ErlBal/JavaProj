@@ -64,7 +64,7 @@ export default function MainMenu() {
           fontWeight: 700,
           letterSpacing: 1
         }}>
-          Currently in match: {currentMatch.mapName}
+          Currently in match: {currentMatch.matchName}
         </div>
       )}
       <button
