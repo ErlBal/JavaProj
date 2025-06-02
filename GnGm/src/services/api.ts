@@ -158,5 +158,20 @@ export const api = {
     }
 
     return response.json();
-  }
+  },
+
+  async getMatchDetails(matchId: number): Promise<{ mapName: string }> {
+    const response = await fetch(`${API_URL}/matches/${matchId}`, {
+      method: 'GET',
+      headers: {
+        ...this.getAuthHeader(),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch match details');
+    }
+
+    return response.json();
+  },
 };

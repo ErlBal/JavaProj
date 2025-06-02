@@ -4,11 +4,7 @@ import { api } from '../services/api';
 
 const AVAILABLE_MAPS = [
   'Map1',
-  'Map2', 
-  'Map3',
-  'City',
-  'Industrial',
-  'Warehouse'
+  'Map2'
 ];
 
 export default function MatchCreation() {
@@ -27,7 +23,7 @@ export default function MatchCreation() {
       console.log('Match created:', match);
       
       // Navigate directly to the game since player is automatically joined
-      navigate('/game', { state: { matchId: match.id } });
+      navigate('/game', { state: { matchId: match.id, mapName } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create match');
     } finally {
@@ -50,25 +46,19 @@ export default function MatchCreation() {
       <form onSubmit={handleCreateMatch} style={{ width: '100%' }}>
         {/* Map Selection */}
         <div style={{ marginBottom: '20px' }}>
-          <label style={{ 
-            display: 'block', 
-            marginBottom: '8px', 
-            color: '#ff4757',
-            fontWeight: 'bold'
-          }}>
-            Select Map:
-          </label>
+          <label htmlFor="map" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#ff4757' }}>Select Map:</label>
           <select
+            id="map"
             value={mapName}
             onChange={(e) => setMapName(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '10px',
+            style={{ 
+              width: '100%', 
+              padding: '10px', 
+              borderRadius: '5px', 
               border: '2px solid #ff4757',
-              borderRadius: '5px',
               backgroundColor: '#2f3542',
               color: 'white',
-              fontSize: '16px'
+              fontSize: '16px' 
             }}
           >
             {AVAILABLE_MAPS.map(map => (

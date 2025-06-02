@@ -23,21 +23,24 @@ public class GameBroadcastScheduler {
 
     @Scheduled(fixedRate = 16)
     public void broadcastGameState() {
-        gameEngineService.updateProjectiles();
-        gameEngineService.cleanupDeadPlayers();
-        
-        // Log current player count every few seconds to reduce spam
-        if (System.currentTimeMillis() - lastLogTime > 3000) { // Log every 3 seconds
-            var players = gameEngineService.getPlayerStates();
-            System.out.println("=== GAME STATE DEBUG ===");
-            System.out.println("Current player count: " + players.size());
-            players.forEach((playerId, player) -> {
-                System.out.println("Player " + playerId + ": " + player.username + 
-                    " at (" + player.x + ", " + player.y + ") health=" + player.health + 
-                    " alive=" + player.alive);
-            });
-            System.out.println("========================");
-            lastLogTime = System.currentTimeMillis();
+        for (Long matchId : gameEngineService.matches.keySet()) {
+            gameEngineService.updateProjectiles(matchId);
+            // Optionally, add cleanupDeadPlayers per match if needed
+            // gameEngineService.cleanupDeadPlayers(matchId);
+            // Logging per match (optional)
+            var match = gameEngineService.matches.get(matchId);
+            if (match != null && System.currentTimeMillis() - lastLogTime > 3000) {
+                var players = match.players;
+                System.out.println("=== GAME STATE DEBUG (Match " + matchId + ") ===");
+                System.out.println("Current player count: " + players.size());
+                players.forEach((playerId, player) -> {
+                    System.out.println("Player " + playerId + ": " + player.username +
+                        " at (" + player.x + ", " + player.y + ") health=" + player.health +
+                        " alive=" + player.alive);
+                });
+                System.out.println("========================");
+                lastLogTime = System.currentTimeMillis();
+            }
         }
         
         // Create GameState and broadcast

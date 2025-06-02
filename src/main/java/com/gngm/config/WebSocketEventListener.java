@@ -61,10 +61,9 @@ public class WebSocketEventListener {
                     if (match.getIsActive()) {
                         logger.info("Removing disconnected player {} from match {}", playerId, match.getId());
                         matchService.leaveMatch(match.getId(), playerId);
+                        gameEngineService.removePlayer(match.getId(), playerId.intValue());
                     }
                 }
-                // Remove player from game engine
-                gameEngineService.removePlayer(playerId.intValue());
                 logger.info("Player disconnected: {}", playerId);
             } catch (Exception e) {
                 logger.error("Error handling disconnection for player {}: {}", playerId, e.getMessage());

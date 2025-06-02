@@ -10,6 +10,7 @@ Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\service\PlayerSe
 Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\dto\AuthenticationResponse.java
 Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\repository\MapRepository.java
 Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\security\JwtAuthenticationFilter.java
+Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\controller\WallController.java
 Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\entity\Weapon.java
 Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\dto\AuthenticationRequest.java
 Q:\Users\erlan\Documents\GitHub\JavaProj\src\main\java\com\gngm\dto\PlayerRegistrationRequest.java

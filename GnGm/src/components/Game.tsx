@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { useLocation } from 'react-router-dom';
+import axios from 'axios';
 
 // Simple types
 interface Player {
@@ -26,14 +28,26 @@ interface GameState {
   projectiles: { [key: string]: Projectile };
 }
 
+interface Wall {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 const Game: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const clientRef = useRef<Client | null>(null);
+  const location = useLocation();
+  const mapNameFromState = location.state?.mapName as string | undefined;
+  const selectedMap = mapNameFromState || 'Map1';
+  const matchId = location.state?.matchId || localStorage.getItem('matchId');
   
   // Game state
   const [gameState, setGameState] = useState<GameState>({ players: {}, projectiles: {} });
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [connected, setConnected] = useState(false);
+  const [walls, setWalls] = useState<Wall[]>([]);
     // Input handling
   const keysPressed = useRef<{ [key: string]: boolean }>({});
   const mousePos = useRef({ x: 0, y: 0 });
@@ -49,6 +63,12 @@ const Game: React.FC = () => {
     connectedRef.current = connected;
   }, [connected]);
   
+  useEffect(() => {
+    if (matchId) {
+      localStorage.setItem('matchId', matchId);
+    }
+  }, [matchId]);
+  
   // Game constants
   const WORLD_W = 1600;
   const WORLD_H = 1200;
@@ -62,7 +82,7 @@ const Game: React.FC = () => {
         console.log('✅ Connected to game server');
         setConnected(true);
           // Listen for game updates
-        client.subscribe('/topic/game/state', (message) => {
+        client.subscribe(`/topic/game/state/${matchId}`, (message) => {
           const state: GameState = JSON.parse(message.body);
           setGameState(state);
           
@@ -77,18 +97,14 @@ const Game: React.FC = () => {
           }
         });
         
-        // Check if playerId exists in localStorage
-        const storedPlayerId = localStorage.getItem('playerId');
-        const playerId = storedPlayerId ? parseInt(storedPlayerId) : Date.now() % 10000;
-        if (!storedPlayerId) {
-          localStorage.setItem('playerId', playerId.toString());
-        }
+        // Join the game
+        const playerId = Date.now() % 10000; // Simple ID
         const username = `Player${playerId}`;
+        localStorage.setItem('playerId', playerId.toString());
         
-        // Publish join message
         client.publish({
           destination: '/app/game/join',
-          body: JSON.stringify({ playerId, username })
+          body: JSON.stringify({ matchId, playerId, username })
         });
         
         console.log(`🎮 Joined as ${username} (ID: ${playerId})`);
@@ -107,7 +123,13 @@ const Game: React.FC = () => {
       return () => {
       client.deactivate();
     };
-  }, []);
+  }, [matchId]);
+  
+  useEffect(() => {
+    axios.get(`/api/walls/${selectedMap}`)
+      .then(res => setWalls(res.data))
+      .catch(() => setWalls([]));
+  }, [selectedMap]);
   
   // Cleanup on page refresh or component unmount
   useEffect(() => {
@@ -181,6 +203,7 @@ const Game: React.FC = () => {
     clientRef.current.publish({
       destination: '/app/game/shoot',
       body: JSON.stringify({
+        matchId,
         playerId: currentPlayer.id,
         direction
       })
@@ -233,6 +256,7 @@ const Game: React.FC = () => {
         client.publish({
           destination: '/app/game/move',
           body: JSON.stringify({
+            matchId,
             playerId: player.id,
             deltaX,
             deltaY,
@@ -310,8 +334,7 @@ const Game: React.FC = () => {
       ctx.textAlign = 'center';
       ctx.fillText(player.username, screenX, screenY - 35);
     });
-    
-    // Draw projectiles
+      // Draw projectiles
     Object.values(gameState.projectiles).forEach(proj => {
       const screenX = (proj.x / WORLD_W) * CANVAS_W;
       const screenY = (proj.y / WORLD_H) * CANVAS_H;
@@ -321,8 +344,15 @@ const Game: React.FC = () => {
       ctx.arc(screenX, screenY, 3, 0, Math.PI * 2);
       ctx.fill();
     });
+      // Draw walls
+    ctx.fillStyle = '#555';
+    if (Array.isArray(walls)) {
+      walls.forEach(wall => {
+        ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
+      });
+    }
     
-  }, [gameState]);
+  }, [gameState, walls]);
   
   // Respawn
   const respawn = () => {
@@ -330,7 +360,10 @@ const Game: React.FC = () => {
     
     clientRef.current.publish({
       destination: '/app/game/respawn',
-      body: JSON.stringify({ playerId: currentPlayer.id })
+      body: JSON.stringify({
+        matchId,
+        playerId: currentPlayer.id
+      })
     });
   };
   

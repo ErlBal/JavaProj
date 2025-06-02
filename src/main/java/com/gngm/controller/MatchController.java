@@ -1,13 +1,14 @@
 package com.gngm.controller;
 
+import com.gngm.dto.MatchResponse;
 import com.gngm.entity.Match;
+import com.gngm.entity.Player;
 import com.gngm.service.MatchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Optional;
 
 @RestController
@@ -19,12 +20,22 @@ public class MatchController {
     @Autowired
     public MatchController(MatchService matchService) {
         this.matchService = matchService;
-    }    @PostMapping
-    public ResponseEntity<Match> createMatch(
+    }
+
+    @PostMapping
+    public ResponseEntity<MatchResponse> createMatch(
             @RequestParam String mapName,
             @RequestParam int maxPlayers,
             @RequestParam Long playerId) {
-        return ResponseEntity.ok(matchService.createMatch(mapName, maxPlayers, playerId));
+        Match match = matchService.createMatch(mapName, maxPlayers, playerId);
+        MatchResponse response = new MatchResponse(
+                match.getId(),
+                match.getMapName(),
+                match.getPlayers().stream().map(Player::getUsername).toList(),
+                match.getIsActive() ? "ACTIVE" : "INACTIVE",
+                match.getWinner() != null ? match.getWinner().getUsername() : null
+        );
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{matchId}/join")
