@@ -88,9 +88,7 @@ const Game: React.FC = () => {
           
           // Update current player
           const playerId = parseInt(localStorage.getItem('playerId') || '1');
-          console.log('🔍 Looking for player ID:', playerId, 'in state players:', Object.keys(state.players));
           if (state.players[playerId]) {
-            console.log('✅ Found current player:', state.players[playerId]);
             setCurrentPlayer(state.players[playerId]);
           } else {
             console.log('❌ Current player not found in game state');
@@ -156,6 +154,7 @@ const Game: React.FC = () => {
       const key = e.key.toLowerCase();
       if (['w', 'a', 's', 'd'].includes(key)) {
         keysPressed.current[key] = true;
+        console.log('Key down:', key, keysPressed.current);
       }
     };
     
@@ -163,6 +162,7 @@ const Game: React.FC = () => {
       const key = e.key.toLowerCase();
       if (['w', 'a', 's', 'd'].includes(key)) {
         keysPressed.current[key] = false;
+        console.log('Key up:', key, keysPressed.current);
       }
     };
     
@@ -214,12 +214,12 @@ const Game: React.FC = () => {
     // Movement loop
   useEffect(() => {
     const moveLoop = setInterval(() => {
+      console.log('Movement loop tick');
       // Use refs to get current values
       const player = currentPlayerRef.current;
       const isConnected = connectedRef.current;
       const client = clientRef.current;
       
-      // Debug: Check movement loop conditions
       if (!player) {
         console.log('❌ No current player');
         return;
@@ -227,26 +227,23 @@ const Game: React.FC = () => {
       if (!client) {
         console.log('❌ No WebSocket client');
         return;
-      }      if (!isConnected) {
+      }
+      if (!isConnected) {
         console.log('❌ Not connected');
         return;
       }
       
       const keys = keysPressed.current;
-      let deltaX = 0;
-      let deltaY = 0;
-
-      // WASD movement
-      if (keys['w']) deltaY -= 5;
-      if (keys['s']) deltaY += 5;
-      if (keys['a']) deltaX -= 5;
-      if (keys['d']) deltaX += 5;
+      let vx = 0;
+      let vy = 0;
+      if (keys['w']) vy -= 5;
+      if (keys['s']) vy += 5;
+      if (keys['a']) vx -= 5;
+      if (keys['d']) vx += 5;
       
-      // Debug: Log when movement is detected
-      if (deltaX !== 0 || deltaY !== 0) {
-        console.log('🎮 Moving:', { deltaX, deltaY });
-      }
-        // Calculate rotation towards mouse
+      // Debug: Log current velocity and keys
+      console.log('Movement keys:', keys, 'vx:', vx, 'vy:', vy);
+      
       const playerScreenX = (player.x / WORLD_W) * CANVAS_W;
       const playerScreenY = (player.y / WORLD_H) * CANVAS_H;
       const dx = mousePos.current.x - playerScreenX;
@@ -254,15 +251,13 @@ const Game: React.FC = () => {
       const rotation = Math.atan2(dy, dx);
       const newRotation = rotation;
       
-      // Send movement
-      if (deltaX !== 0 || deltaY !== 0) {
-        console.log('🚶 Sending movement:', { playerId: player.id, deltaX, deltaY, rotation: newRotation });
-        client.publish({
-          destination: '/app/game/move',
-          body: JSON.stringify({ matchId, playerId: player.id, deltaX, deltaY, rotation: newRotation })
-        });
-      }
-    }, 1000 / 30); // 30 FPS
+      // Debug: Log outgoing movement message
+      console.log('Sending movement:', { matchId, playerId: player.id, vx, vy, rotation: newRotation });
+      client.publish({
+        destination: '/app/game/move',
+        body: JSON.stringify({ matchId, playerId: player.id, vx, vy, rotation: newRotation })
+      });
+    }, 1000 / 60); // 60 FPS
 
     return () => clearInterval(moveLoop);
   }, [matchId, currentPlayer]);

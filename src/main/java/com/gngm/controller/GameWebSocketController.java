@@ -21,8 +21,8 @@ public class GameWebSocketController {
     public static class MovementMessage {
         public long matchId;
         public int playerId;
-        public double deltaX;
-        public double deltaY;
+        public double vx;
+        public double vy;
         public double rotation;
     }
 
@@ -47,7 +47,7 @@ public class GameWebSocketController {
     // Handle player movement
     @MessageMapping("/game/move")
     public void handlePlayerMovement(MovementMessage message) {
-        gameEngine.movePlayer(message.matchId, message.playerId, message.deltaX, message.deltaY, message.rotation);
+        gameEngine.movePlayer(message.matchId, message.playerId, message.vx, message.vy, message.rotation);
     }
 
     // Handle player shooting

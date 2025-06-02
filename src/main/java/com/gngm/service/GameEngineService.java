@@ -41,9 +41,27 @@ public class GameEngineService {
         // Update all matches at 60 FPS
         gameLoop.scheduleAtFixedRate(() -> {
             for (Long matchId : matches.keySet()) {
+                // Update player positions by velocity
+                MatchState match = matches.get(matchId);
+                if (match != null) {
+                    List<Wall> walls = wallConfigurations.getOrDefault(match.mapName, List.of());
+                    for (Player player : match.players.values()) {
+                        if (player.alive) {
+                            double newX = Math.max(20, Math.min(MAP_WIDTH - 20, player.x + player.vx));
+                            double newY = Math.max(20, Math.min(MAP_HEIGHT - 20, player.y + player.vy));
+                            double playerSize = 40;
+                            if (!collidesWithWall(newX, newY, playerSize, walls)) {
+                                System.out.println("Moving player " + player.id + " from (" + player.x + ", " + player.y + ") to (" + newX + ", " + newY + ") with vx=" + player.vx + ", vy=" + player.vy);
+                                player.x = newX;
+                                player.y = newY;
+                            }
+                        }
+                    }
+                }
                 updateProjectiles(matchId);
                 checkCollisions(matchId);
                 cleanupDeadPlayers(matchId);
+                broadcastGameState(matchId);
             }
         }, 0, 16, TimeUnit.MILLISECONDS);
     }
@@ -56,6 +74,8 @@ public class GameEngineService {
         public double rotation = 0;
         public int health = MAX_HEALTH;        public boolean alive = true;
         public long deathTime = 0;
+        public double vx = 0; // velocity x
+        public double vy = 0; // velocity y
         
         public Player(int id, String username) {
             this.id = id;
@@ -120,21 +140,20 @@ public class GameEngineService {
     }
 
     // Move player in match
-    public void movePlayer(long matchId, int playerId, double deltaX, double deltaY, double rotation) {
+    public void movePlayer(long matchId, int playerId, double vx, double vy, double rotation) {
         MatchState match = matches.get(matchId);
         if (match != null) {
             Player player = match.players.get(playerId);
             if (player != null && player.alive) {
-                List<Wall> walls = wallConfigurations.getOrDefault(match.mapName, List.of());
-                double newX = Math.max(20, Math.min(MAP_WIDTH - 20, player.x + deltaX));
-                double newY = Math.max(20, Math.min(MAP_HEIGHT - 20, player.y + deltaY));
-                double playerSize = 40;
-                if (!collidesWithWall(newX, newY, playerSize, walls)) {
-                    player.x = newX;
-                    player.y = newY;
-                }
+                player.vx = vx;
+                player.vy = vy;
                 player.rotation = rotation;
+                System.out.println("Set velocity for player " + playerId + ": vx=" + vx + ", vy=" + vy);
+            } else {
+                System.out.println("Player not found or not alive: " + playerId);
             }
+        } else {
+            System.out.println("Match not found: " + matchId);
         }
     }
 
