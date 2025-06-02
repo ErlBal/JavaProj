@@ -44,17 +44,15 @@ public class GameEngineService {
                 // Update player positions by velocity
                 MatchState match = matches.get(matchId);
                 if (match != null) {
-                    List<Wall> walls = wallConfigurations.getOrDefault(match.mapName, List.of());
+                    // Remove wall collision: players can move freely within bounds
                     for (Player player : match.players.values()) {
                         if (player.alive) {
                             double newX = Math.max(20, Math.min(MAP_WIDTH - 20, player.x + player.vx));
                             double newY = Math.max(20, Math.min(MAP_HEIGHT - 20, player.y + player.vy));
-                            double playerSize = 40;
-                            if (!collidesWithWall(newX, newY, playerSize, walls)) {
-                                System.out.println("Moving player " + player.id + " from (" + player.x + ", " + player.y + ") to (" + newX + ", " + newY + ") with vx=" + player.vx + ", vy=" + player.vy);
-                                player.x = newX;
-                                player.y = newY;
-                            }
+                            // No wall collision check
+                            System.out.println("Moving player " + player.id + " from (" + player.x + ", " + player.y + ") to (" + newX + ", " + newY + ") with vx=" + player.vx + ", vy=" + player.vy);
+                            player.x = newX;
+                            player.y = newY;
                         }
                     }
                 }
@@ -174,7 +172,7 @@ public class GameEngineService {
     public void updateProjectiles(long matchId) {
         MatchState match = matches.get(matchId);
         if (match != null) {
-            List<Wall> walls = wallConfigurations.getOrDefault(match.mapName, List.of());
+            // Remove wall collision: projectiles only disappear when out of bounds or after 3 seconds
             long currentTime = System.currentTimeMillis();
             match.projectiles.entrySet().removeIf(entry -> {
                 Projectile proj = entry.getValue();
@@ -183,8 +181,7 @@ public class GameEngineService {
                 }
                 proj.x += Math.cos(proj.direction) * PROJECTILE_SPEED * 0.016;
                 proj.y += Math.sin(proj.direction) * PROJECTILE_SPEED * 0.016;
-                return proj.x < 0 || proj.x > MAP_WIDTH || proj.y < 0 || proj.y > MAP_HEIGHT
-                    || collidesWithWall(proj.x, proj.y, 6, walls);
+                return proj.x < 0 || proj.x > MAP_WIDTH || proj.y < 0 || proj.y > MAP_HEIGHT;
             });
         }
     }
@@ -270,39 +267,5 @@ public class GameEngineService {
                 }
             }
         }
-    }
-
-    public static class Wall {
-        public double x, y, width, height;
-        public Wall(double x, double y, double width, double height) {
-            this.x = x; this.y = y; this.width = width; this.height = height;
-        }
-    }
-
-    private static final Map<String, List<Wall>> wallConfigurations = Map.of(
-        "Map1", List.of(
-            new Wall(200, 200, 100, 20),
-            new Wall(400, 300, 150, 20),
-            new Wall(600, 400, 200, 20)
-        ),
-        "Map2", List.of(
-            new Wall(100, 100, 120, 30),
-            new Wall(300, 250, 180, 25),
-            new Wall(500, 350, 220, 30)
-        )
-    );
-
-    public static Map<String, List<Wall>> getWallConfigurations() {
-        return wallConfigurations;
-    }
-
-    private boolean collidesWithWall(double x, double y, double size, List<Wall> walls) {
-        for (Wall wall : walls) {
-            if (x + size/2 > wall.x && x - size/2 < wall.x + wall.width &&
-                y + size/2 > wall.y && y - size/2 < wall.y + wall.height) {
-                return true;
-            }
-        }
-        return false;
     }
 }
