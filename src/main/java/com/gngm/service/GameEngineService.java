@@ -184,7 +184,6 @@ public class GameEngineService {
     public void updateProjectiles(long matchId) {
         MatchState match = matches.get(matchId);
         if (match != null) {
-            // Remove wall collision: projectiles only disappear when out of bounds or after 3 seconds
             long currentTime = System.currentTimeMillis();
             match.projectiles.entrySet().removeIf(entry -> {
                 Projectile proj = entry.getValue();
@@ -193,7 +192,8 @@ public class GameEngineService {
                 }
                 proj.x += Math.cos(proj.direction) * PROJECTILE_SPEED * 0.016;
                 proj.y += Math.sin(proj.direction) * PROJECTILE_SPEED * 0.016;
-                return proj.x < 0 || proj.x > MAP_WIDTH || proj.y < 0 || proj.y > MAP_HEIGHT;
+                // Remove if out of bounds or hits wall
+                return proj.x < 0 || proj.x > MAP_WIDTH || proj.y < 0 || proj.y > MAP_HEIGHT || projectileHitsWall(proj.x, proj.y);
             });
         }
     }
@@ -309,6 +309,19 @@ public class GameEngineService {
             double dx = x - closestX;
             double dy = y - closestY;
             if (dx * dx + dy * dy < PLAYER_RADIUS * PLAYER_RADIUS) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean projectileHitsWall(double x, double y) {
+        for (Map<String, Object> wall : wallRects) {
+            double wx = ((Number) wall.get("x")).doubleValue();
+            double wy = ((Number) wall.get("y")).doubleValue();
+            double ww = ((Number) wall.get("width")).doubleValue();
+            double wh = ((Number) wall.get("height")).doubleValue();
+            if (x >= wx && x <= wx + ww && y >= wy && y <= wy + wh) {
                 return true;
             }
         }
