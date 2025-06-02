@@ -456,14 +456,30 @@ const Game: React.FC = () => {
         }
       `}</style>
       {/* Top Left: Status */}
-      <div className="hud-corner hud-top-left">
+      <div className="hud-corner hud-top-left" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <span style={{ color: connected ? '#4a4' : '#f44', fontWeight: 'bold' }}>
           {connected ? '🟢 ONLINE' : '🔴 OFFLINE'}
         </span>
         <button
           className="hud-btn"
-          style={{ marginLeft: 16, fontSize: 14, padding: '4px 12px', verticalAlign: 'middle' }}
+          style={{
+            background: 'transparent',
+            color: '#bbb',
+            border: '1.5px solid #888',
+            fontSize: 14,
+            padding: '4px 16px',
+            marginLeft: 0,
+            marginTop: '2px',
+            boxShadow: 'none',
+            outline: 'none',
+            cursor: 'pointer',
+            transition: 'background 0.2s, color 0.2s',
+            borderRadius: 6,
+            fontWeight: 500
+          }}
           onClick={handleExitMatch}
+          onMouseOver={e => (e.currentTarget.style.background = 'rgba(200,200,200,0.08)')}
+          onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
         >
           Exit Match
         </button>
