@@ -170,7 +170,6 @@ const Game: React.FC = () => {
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
     const rect = canvas.getBoundingClientRect();
     mousePos.current = {
       x: e.clientX - rect.left,
@@ -181,16 +180,15 @@ const Game: React.FC = () => {
   // Shooting
   const handleClick = () => {
     if (!currentPlayer || !clientRef.current || !connected) return;
-    
-    // Calculate shoot direction
-    const playerScreenX = (currentPlayer.x / WORLD_W) * window.innerWidth;
-    const playerScreenY = (currentPlayer.y / WORLD_H) * window.innerHeight;
-    
-    const dx = mousePos.current.x - playerScreenX;
-    const dy = mousePos.current.y - playerScreenY;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    // Convert mouse position from canvas to world coordinates
+    const mouseWorldX = (mousePos.current.x / canvas.width) * WORLD_W;
+    const mouseWorldY = (mousePos.current.y / canvas.height) * WORLD_H;
+    // Use game world coordinates for the player as well
+    const dx = mouseWorldX - currentPlayer.x;
+    const dy = mouseWorldY - currentPlayer.y;
     const direction = Math.atan2(dy, dx);
-    
-    // Send shoot command
     clientRef.current.publish({
       destination: '/app/game/shoot',
       body: JSON.stringify({
@@ -199,8 +197,7 @@ const Game: React.FC = () => {
         direction
       })
     });
-    
-    console.log('💥 Shooting!');
+    console.log('�� Shooting!');
   };
     // Movement loop
   useEffect(() => {
@@ -235,10 +232,13 @@ const Game: React.FC = () => {
       // Debug: Log current velocity and keys
       console.log('Movement keys:', keys, 'vx:', vx, 'vy:', vy);
       
-      const playerScreenX = (player.x / WORLD_W) * window.innerWidth;
-      const playerScreenY = (player.y / WORLD_H) * window.innerHeight;
-      const dx = mousePos.current.x - playerScreenX;
-      const dy = mousePos.current.y - playerScreenY;
+      // Convert mouse position from canvas to world coordinates
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const mouseWorldX = (mousePos.current.x / canvas.width) * WORLD_W;
+      const mouseWorldY = (mousePos.current.y / canvas.height) * WORLD_H;
+      const dx = mouseWorldX - player.x;
+      const dy = mouseWorldY - player.y;
       const rotation = Math.atan2(dy, dx);
       const newRotation = rotation;
       
