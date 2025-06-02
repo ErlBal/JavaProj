@@ -305,10 +305,25 @@ const Game: React.FC = () => {
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(screenX, screenY);
-        ctx.lineTo(
-          screenX + Math.cos(player.rotation) * 25,
-          screenY + Math.sin(player.rotation) * 25
-        );
+        if (currentPlayer && player.id === currentPlayer.id) {
+          // For the local player, draw the stick towards the mouse with fixed length
+          const dx = mousePos.current.x - screenX;
+          const dy = mousePos.current.y - screenY;
+          const length = Math.sqrt(dx * dx + dy * dy);
+          const stickLength = 25;
+          const dirX = dx / (length || 1);
+          const dirY = dy / (length || 1);
+          ctx.lineTo(
+            screenX + dirX * stickLength,
+            screenY + dirY * stickLength
+          );
+        } else {
+          // For other players, use their rotation from the backend
+          ctx.lineTo(
+            screenX + Math.cos(player.rotation) * 25,
+            screenY + Math.sin(player.rotation) * 25
+          );
+        }
         ctx.stroke();
       }
       
